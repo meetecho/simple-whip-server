@@ -1,0 +1,30 @@
+{
+	"name": "janus-whip-server",
+	"description": "Simple Janus-based WHIP server",
+	"version": "0.0.1",
+	"license": "GPLv3",
+	"keywords": [
+		"whip",
+		"wish",
+		"janus",
+		"webrtc",
+		"meetecho"
+	],
+	"author": {
+		"name": "Lorenzo Miniero",
+		"email": "lorenzo@meetecho.com"
+	},
+	"main": "src/server.js",
+	"dependencies": {
+		"async": ">= 1.5.2",
+		"colors": ">= 1.1.2",
+		"debug": ">= 2.2.0",
+		"express": ">= 4.12.3",
+		"websocket": ">= 1.0.25"
+	},
+	"scripts": {
+		"build": "npm install --production",
+		"start": "DEBUG=whip:*,-whip:debug,janus:*,-janus:debug,-janus:vdebug node src/server.js",
+		"start-debug": "DEBUG=whip:*,janus:* node src/server.js"
+	}
+}
