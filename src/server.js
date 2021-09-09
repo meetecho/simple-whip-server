@@ -243,8 +243,19 @@ function setupRest(app) {
 		});
 	});
 
-	// Trickle a WHIP endpoint
-	router.patch('/endpoint/:id', function(req, res) {
+	// GET, HEAD and PUT on the endpoint must return a 405
+	router.get('/endpoint/:id', function(req, res) {
+		res.sendStatus(405);
+	});
+	router.head('/endpoint/:id', function(req, res) {
+		res.sendStatus(405);
+	});
+	router.put('/endpoint/:id', function(req, res) {
+		res.sendStatus(405);
+	});
+
+	// Trickle a WHIP resource
+	router.patch('/resource/:id', function(req, res) {
 		var id = req.params.id;
 		var endpoint = endpoints[id];
 		if(!id || !endpoint) {
@@ -252,7 +263,7 @@ function setupRest(app) {
 			res.send('Invalid endpoint ID');
 			return;
 		}
-		whip.debug("/endpoint[trickle]/:", id);
+		whip.debug("/resource[trickle]/:", id);
 		whip.debug(req.body);
 		// Check the Bearer token
 		var auth = req.headers["authorization"];
@@ -284,17 +295,6 @@ function setupRest(app) {
 		janus.trickle({ uuid: endpoint.publisher, candidate: candidate });
 		// Done
 		res.sendStatus(200);
-	});
-
-	// GET, HEAD and PUT on the endpoint must return a 405
-	router.get('/endpoint/:id', function(req, res) {
-		res.sendStatus(405);
-	});
-	router.head('/endpoint/:id', function(req, res) {
-		res.sendStatus(405);
-	});
-	router.put('/endpoint/:id', function(req, res) {
-		res.sendStatus(405);
 	});
 
 	// Stop publishing to a WHIP endpoint
