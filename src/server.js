@@ -233,7 +233,7 @@ function setupRest(app) {
 				res.send(err.error);
 			} else {
 				whip.info('[' + id + '] Publishing to WHIP endpoint');
-				endpoint.resource = '/whip/resource/' + id;
+				endpoint.resource = config.rest + '/resource/' + id;
 				// Done
 				res.setHeader('content-type', 'application/sdp');
 				res.setHeader('location', endpoint.resource);
