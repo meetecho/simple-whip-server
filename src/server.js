@@ -46,7 +46,18 @@ async.series([
 		var app = express();
 		app.use(express.static('web'));
 		setupRest(app);
-		var http = require('http').Server(app);
+		// Are we using plain HTTP or HTTPS?
+		var options = null;
+		var https = (config.https && config.https.cert && config.https.key);
+		if(https) {
+			var fs = require('fs');
+			options = {
+				cert: fs.readFileSync(config.https.cert, 'utf8'),
+				key: fs.readFileSync(config.https.key, 'utf8'),
+				passphrase: config.https.passphrase
+			};
+		}
+		var http = require(https ? 'https' : 'http').createServer(options, app);
 		http.on('error', function(err) {
 			console.log('Web server error:', err)
 			if(err.code == 'EADDRINUSE') {

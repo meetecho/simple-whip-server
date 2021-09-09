@@ -10,6 +10,13 @@ module.exports = {
 
 	// Port to bind the WHIP API to
 	port: 7080,
+	// By default we create a plain HTTP backend, but you can turn that
+	// into an HTTPS one instead if you configure the certificate to use
+	//~ https: {
+		//~ cert: '/path/to/certificate',
+		//~ key: '/path/to/privatekey',
+		//~ passphrase: 'key passphrase, if required'
+	//~ },
 
 	// Base path for the REST WHIP API
 	rest: '/whip',
