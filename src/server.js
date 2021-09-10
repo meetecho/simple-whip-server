@@ -303,6 +303,9 @@ function setupRest(app) {
 					candidate: line.split('a=')[1]
 				};
 				janus.trickle({ uuid: endpoint.publisher, candidate: candidate });
+			} else if(line.indexOf("a=end-of-candidates") === 0) {
+				// Signal there won't be any more candidates
+				janus.trickle({ uuid: endpoint.publisher, candidate: { completed: true } });
 			}
 		}
 		// Done
