@@ -1,7 +1,7 @@
 Simple WHIP Server
 ==================
 
-This is an attempt to create a simple prototype of a [WHIP server](https://www.ietf.org/archive/id/draft-ietf-wish-whip-00.html), using Janus as a WebRTC server backend. It's mostly meant to be used with my [Simple WHIP Client](https://github/lminiero/simple-whip-client) (based on [GStreamer's webrtcbin](https://gstreamer.freedesktop.org/documentation/webrtc/index.html)), as well as for interoperability testing with other WHIP implementations. As such, it's very early stages, and mostly meant as a playground for interested developers.
+This is an attempt to create a simple prototype of a [WHIP server](https://www.ietf.org/archive/id/draft-ietf-wish-whip-00.html), using Janus as a WebRTC server backend. It's mostly meant to be used with my [Simple WHIP Client](https://github.com/lminiero/simple-whip-client) (based on [GStreamer's webrtcbin](https://gstreamer.freedesktop.org/documentation/webrtc/index.html)), as well as for interoperability testing with other WHIP implementations. As such, it's very early stages, and mostly meant as a playground for interested developers.
 
 # Installation
 
