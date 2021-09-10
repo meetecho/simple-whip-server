@@ -291,8 +291,20 @@ function setupRest(app) {
 			res.send('Unsupported content type');
 			return;
 		}
-		var candidate = req.params.candidate;
-		janus.trickle({ uuid: endpoint.publisher, candidate: candidate });
+		// Parse the RFC 8840 payload
+		var fragment = req.body;
+		var lines = fragment.split(/\r?\n/);
+		for(var line of lines) {
+			// Note: we should check ICE credentials and m-line, but for
+			// the sake of simplicity we just go for the candidate lines
+			if(line.indexOf("a=candidate:") === 0) {
+				var candidate = {
+					sdpMLineIndex: 0,
+					candidate: line.split('a=')[1]
+				};
+				janus.trickle({ uuid: endpoint.publisher, candidate: candidate });
+			}
+		}
 		// Done
 		res.sendStatus(200);
 	});
@@ -384,6 +396,6 @@ function setupRest(app) {
 	var bodyParser = require('body-parser');
 	app.use(bodyParser.json());
 	app.use(bodyParser.text({ type: 'application/sdp' }));
-	app.use(bodyParser.json({ type: 'application/trickle-ice-sdpfrag' }));
+	app.use(bodyParser.text({ type: 'application/trickle-ice-sdpfrag' }));
 	app.use(config.rest, router);
 }
