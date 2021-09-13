@@ -330,7 +330,7 @@ var whipJanus = function(janusConfig) {
 		var restart = {
 			janus: "message",
 			session_id: that.config.janus.session,
-			handle_id: handle,
+			handle_id: session.handle,
 			body: {
 				request: "configure",
 			},

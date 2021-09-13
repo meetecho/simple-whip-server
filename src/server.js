@@ -320,64 +320,78 @@ function setupRest(app) {
 		// Parse the RFC 8840 payload
 		var fragment = req.body;
 		var lines = fragment.split(/\r?\n/);
-		var iceUfrag = null, icePwd = null, restartChecked = false;
+		var iceUfrag = null, icePwd = null, restart = false;
+		var candidates = [];
 		for(var line of lines) {
 			if(line.indexOf('a=ice-ufrag:') === 0) {
 				iceUfrag = line.split('a=ice-ufrag:')[1];
 			} else if(line.indexOf('a=ice-pwd:') === 0) {
-				icePwd = line.split('a=ice_pwd:')[1];
+				icePwd = line.split('a=ice-pwd:')[1];
 			} else if(line.indexOf("a=candidate:") === 0) {
 				var candidate = {
 					sdpMLineIndex: 0,
 					candidate: line.split('a=')[1]
 				};
-				janus.trickle({ uuid: endpoint.publisher, candidate: candidate });
+				candidates.push(candidate);
 			} else if(line.indexOf("a=end-of-candidates") === 0) {
 				// Signal there won't be any more candidates
-				janus.trickle({ uuid: endpoint.publisher, candidate: { completed: true } });
-			}
-			if(!restartChecked && iceUfrag && icePwd) {
-				// Check if there's a restart involved
-				if(iceUfrag !== endpoint.ice.ufrag || icePwd !== endpoint.ice.pwd) {
-					whip.warn(iceUfrag + ' !== ' + endpoint.ice.ufrag);
-					whip.warn(iceUfrag === endpoint.ice.ufrag);
-					whip.warn(icePwd + ' !== ' + endpoint.ice.pwd);
-					whip.warn(icePwd === endpoint.ice.pwd);
-					// Generate a new fake offer and send it to Janus
-					restart = 1;
-					var oldUfrag = 'a=ice-ufrag:' + endpoint.ice.ufrag;
-					var oldPwd = 'a=ice-pwd:' + endpoint.ice.pwd;
-					var newUfrag = 'a=ice-ufrag:' + iceUfrag;
-					var newPwd = 'a=ice-pwd:' + icePwd;
-					whip.warn('Pre:', endpoint.sdpOffer);
-					endpoint.sdpOffer
-						.replace(new RegExp(oldUfrag, 'g'), newUfrag)
-						.replace(new RegExp(oldPwd, 'g'), newPwd);
-					whip.warn('Post:', endpoint.sdpOffer);
-					endpoint.ice.ufrag = iceUfrag;
-					endpoint.ice.pwd = icePwd;
-					// Send the new offer
-					var details = {
-						uuid: endpoint.uuid,
-						jsep: {
-							type: 'offer',
-							sdp: endpoint.sdpOffer
-						}
-					};
-					janus.restart(details, function(err, result) {
-						if(err) {
-							whip.err('Error restarting:', err.error);
-						} else {
-							// We don't send the answer back
-							whip.info('[' + id + '] Performed restart of endpoint');
-						}
-					});
-				}
-				restartChecked = true;
+				candidates.push({ completed: true });
 			}
 		}
-		// Done
-		res.sendStatus(200);
+		// Check if there's a restart involved
+		if(iceUfrag && icePwd && (iceUfrag !== endpoint.ice.ufrag || icePwd !== endpoint.ice.pwd)) {
+			// We need to restart
+			restart = true;
+		}
+		if(!restart) {
+			// Trickle the candidate(s)
+			if(candidates.length > 0)
+				janus.trickle({ uuid: endpoint.publisher, candidates: candidates });
+			// We're Done
+			res.sendStatus(200);
+			return;
+		}
+		// If we got here, we need to do an ICE restart, which we do
+		// by generating a new fake offer and send it to Janus
+		var oldUfrag = 'a=ice-ufrag:' + endpoint.ice.ufrag;
+		var oldPwd = 'a=ice-pwd:' + endpoint.ice.pwd;
+		var newUfrag = 'a=ice-ufrag:' + iceUfrag;
+		var newPwd = 'a=ice-pwd:' + icePwd;
+		endpoint.sdpOffer = endpoint.sdpOffer
+			.replace(new RegExp(oldUfrag, 'g'), newUfrag)
+			.replace(new RegExp(oldPwd, 'g'), newPwd);
+		endpoint.ice.ufrag = iceUfrag;
+		endpoint.ice.pwd = icePwd;
+		// Send the new offer
+		var details = {
+			uuid: endpoint.publisher,
+			jsep: {
+				type: 'offer',
+				sdp: endpoint.sdpOffer
+			}
+		};
+		whip.info('[' + id + '] Performing ICE restart');
+		janus.restart(details, function(err, result) {
+			if(err) {
+				whip.err('Error restarting:', err.error);
+				res.status(400);
+				res.send('Restart error');
+			} else {
+				// Now that we have a response, trickle the candidates we received
+				if(candidates.length > 0)
+					janus.trickle({ uuid: endpoint.publisher, candidates: candidates });
+				// Read the ICE credentials and send them back
+				var sdpAnswer = result.jsep.sdp;
+				var serverUfrag = sdpAnswer.match(/a=ice-ufrag:(.*)\r\n/)[1];
+				var serverPwd = sdpAnswer.match(/a=ice-pwd:(.*)\r\n/)[1];
+				var payload =
+					'a=ice-ufrag:' + serverUfrag + '\r\n' +
+					'a=ice-pwd:' + serverPwd + '\r\n';
+				res.setHeader('Content-Type', 'application/trickle-ice-sdpfrag');
+				res.status(200);
+				res.send(payload);
+			}
+		});
 	});
 
 	// Stop publishing to a WHIP endpoint
