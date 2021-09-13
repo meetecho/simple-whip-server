@@ -211,7 +211,24 @@ function setupRest(app) {
 		var uuid = "WHIP Publisher " + endpoint.room;
 		// Create a new session
 		janus.removeSession({ uuid: uuid });
-		janus.addSession({ uuid: uuid });
+		janus.addSession({
+			uuid: uuid,
+			whipId: id,
+			teardown: function(whipId) {
+				// Janus notified us the session is gone, tear it down
+				var endpoint = endpoints[id];
+				if(endpoint) {
+					whip.info('[' + id + '] PeerConnection detected as closed');
+					if(endpoint.publisher)
+						janus.removeSession({ uuid: endpoint.publisher });
+					endpoint.enabled = false;
+					delete endpoint.publisher;
+					delete endpoint.sdpOffer;
+					delete endpoint.ice;
+					delete endpoint.resource;
+				}
+			}
+		});
 		// Prepare the JSEP object
 		var details = {
 			uuid: uuid,

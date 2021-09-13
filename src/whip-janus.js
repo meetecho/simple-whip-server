@@ -109,6 +109,18 @@ var whipJanus = function(janusConfig) {
 						}
 						return;
 					}
+					if(event === 'hangup') {
+						// Janus told us this PeerConnection is gone
+						var sender = json["sender"];
+						var handle = handles[sender];
+						if(handle) {
+							var session = sessions[handle.uuid];
+							if(session && session.whipId && session.teardown && (typeof session.teardown === "function")) {
+								// Notify the application layer
+								session.teardown(session.whipId);
+							}
+						}
+					}
 				}
 			});
 			// Create the session now
@@ -144,7 +156,9 @@ var whipJanus = function(janusConfig) {
 	this.addSession = function(details) {
 		whip.debug("Adding session:", details);
 		sessions[details.uuid] = {
-			uuid: details.uuid
+			uuid: details.uuid,
+			whipId: details.whipId,
+			teardown: details.teardown
 		};
 	};
 	this.removeSession = function(details) {
