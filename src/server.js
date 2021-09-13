@@ -260,6 +260,7 @@ function setupRest(app) {
 				whip.info('[' + id + '] Publishing to WHIP endpoint');
 				endpoint.resource = config.rest + '/resource/' + id;
 				// Done
+				res.setHeader('Access-Control-Expose-Headers', 'Location');
 				res.setHeader('Content-Type', 'application/sdp');
 				res.setHeader('Location', endpoint.resource);
 				res.status(201);
@@ -463,6 +464,10 @@ function setupRest(app) {
 		// Done
 		res.sendStatus(200);
 	});
+
+	// Setup CORS
+	var cors = require('cors');
+	app.use(cors());
 
 	// Initialize the REST API
 	var bodyParser = require('body-parser');

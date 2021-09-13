@@ -18,6 +18,7 @@
 	"dependencies": {
 		"async": ">= 1.5.2",
 		"colors": ">= 1.1.2",
+		"cors": "^2.8.5",
 		"debug": ">= 2.2.0",
 		"express": ">= 4.12.3",
 		"websocket": ">= 1.0.25"
