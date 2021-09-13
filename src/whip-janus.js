@@ -212,7 +212,7 @@ var whipJanus = function(janusConfig) {
 				});
 				session.candidates = [];
 			}
-			// Send a request to the plugin to publish (and record)
+			// Send a request to the plugin to publish
 			var publish = {
 				janus: "message",
 				session_id: that.config.janus.session,
@@ -296,6 +296,66 @@ var whipJanus = function(janusConfig) {
 		janusSend(trickle, function(response) {
 			// Unsubscribe from the transaction right away
 			delete that.config.janus.transactions[response["transaction"]];
+		});
+	};
+	this.restart = function(details, callback) {
+		callback = (typeof callback === "function") ? callback : noop;
+		whip.debug("Restarting:", details);
+		if(!details.jsep || !details.uuid) {
+			callback({ error: "Missing mandatory attribute(s)" });
+			return;
+		}
+		var jsep = details.jsep;
+		var uuid = details.uuid;
+		var session = sessions[uuid];
+		if(!session || !session.handle) {
+			callback({ error: "No such session" });
+			return;
+		}
+		// Send a request to the plugin with the new SDP to restart
+		var restart = {
+			janus: "message",
+			session_id: that.config.janus.session,
+			handle_id: handle,
+			body: {
+				request: "configure",
+			},
+			jsep: jsep
+		};
+		janusSend(restart, function(response) {
+			var event = response["janus"];
+			if(event === "error") {
+				delete that.config.janus.transactions[response["transaction"]];
+				whip.err("Got an error restarting:", response["error"].reason);
+				callback({ error: response["error"].reason });
+				return;
+			}
+			if(event === "ack") {
+				whip.debug("Got an ack to the restart for session " + uuid + ", waiting for result...");
+				return;
+			}
+			// Get the plugin data: is this a success or an error?
+			var data = response.plugindata.data;
+			if(data.error) {
+				// Unsubscribe from the transaction
+				delete that.config.janus.transactions[response["transaction"]];
+				whip.err("Got an error restarting:", data.error);
+				callback({ error: data.error });
+				return;
+			}
+			whip.debug("Got an answer to the restart for session " + uuid + ":", data);
+			if(data["reason"]) {
+				// Unsubscribe from the transaction
+				delete that.config.janus.transactions[response["transaction"]];
+				// Notify the error
+				callback({ error: data["reason"] });
+			} else {
+				// Unsubscribe from the transaction
+				delete that.config.janus.transactions[response["transaction"]];
+				// Notify the response
+				var jsep = response["jsep"];
+				callback(null, { jsep: jsep });
+			}
 		});
 	};
 	this.hangup = function(details, callback) {

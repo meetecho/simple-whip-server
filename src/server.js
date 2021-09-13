@@ -223,20 +223,28 @@ function setupRest(app) {
 		};
 		endpoint.enabled = true;
 		endpoint.publisher = uuid;
+		// Take note of SDP and ICE credentials
+		endpoint.sdpOffer = req.body;
+		endpoint.ice = {
+			ufrag: endpoint.sdpOffer.match(/a=ice-ufrag:(.*)\r\n/)[1],
+			pwd: endpoint.sdpOffer.match(/a=ice-pwd:(.*)\r\n/)[1]
+		};
 		// Publish
 		janus.publish(details, function(err, result) {
 			// Make sure we got an ANSWER back
 			if(err) {
 				endpoint.enabled = false;
 				delete endpoint.publisher;
+				delete endpoint.sdpOffer;
+				delete endpoint.ice;
 				res.status(500);
 				res.send(err.error);
 			} else {
 				whip.info('[' + id + '] Publishing to WHIP endpoint');
 				endpoint.resource = config.rest + '/resource/' + id;
 				// Done
-				res.setHeader('content-type', 'application/sdp');
-				res.setHeader('location', endpoint.resource);
+				res.setHeader('Content-Type', 'application/sdp');
+				res.setHeader('Location', endpoint.resource);
 				res.status(201);
 				res.send(result.jsep.sdp);
 			}
@@ -294,10 +302,13 @@ function setupRest(app) {
 		// Parse the RFC 8840 payload
 		var fragment = req.body;
 		var lines = fragment.split(/\r?\n/);
+		var iceUfrag = null, icePwd = null, restartChecked = false;
 		for(var line of lines) {
-			// Note: we should check ICE credentials and m-line, but for
-			// the sake of simplicity we just go for the candidate lines
-			if(line.indexOf("a=candidate:") === 0) {
+			if(line.indexOf('a=ice-ufrag:') === 0) {
+				iceUfrag = line.split('a=ice-ufrag:')[1];
+			} else if(line.indexOf('a=ice-pwd:') === 0) {
+				icePwd = line.split('a=ice_pwd:')[1];
+			} else if(line.indexOf("a=candidate:") === 0) {
 				var candidate = {
 					sdpMLineIndex: 0,
 					candidate: line.split('a=')[1]
@@ -306,6 +317,45 @@ function setupRest(app) {
 			} else if(line.indexOf("a=end-of-candidates") === 0) {
 				// Signal there won't be any more candidates
 				janus.trickle({ uuid: endpoint.publisher, candidate: { completed: true } });
+			}
+			if(!restartChecked && iceUfrag && icePwd) {
+				// Check if there's a restart involved
+				if(iceUfrag !== endpoint.ice.ufrag || icePwd !== endpoint.ice.pwd) {
+					whip.warn(iceUfrag + ' !== ' + endpoint.ice.ufrag);
+					whip.warn(iceUfrag === endpoint.ice.ufrag);
+					whip.warn(icePwd + ' !== ' + endpoint.ice.pwd);
+					whip.warn(icePwd === endpoint.ice.pwd);
+					// Generate a new fake offer and send it to Janus
+					restart = 1;
+					var oldUfrag = 'a=ice-ufrag:' + endpoint.ice.ufrag;
+					var oldPwd = 'a=ice-pwd:' + endpoint.ice.pwd;
+					var newUfrag = 'a=ice-ufrag:' + iceUfrag;
+					var newPwd = 'a=ice-pwd:' + icePwd;
+					whip.warn('Pre:', endpoint.sdpOffer);
+					endpoint.sdpOffer
+						.replace(new RegExp(oldUfrag, 'g'), newUfrag)
+						.replace(new RegExp(oldPwd, 'g'), newPwd);
+					whip.warn('Post:', endpoint.sdpOffer);
+					endpoint.ice.ufrag = iceUfrag;
+					endpoint.ice.pwd = icePwd;
+					// Send the new offer
+					var details = {
+						uuid: endpoint.uuid,
+						jsep: {
+							type: 'offer',
+							sdp: endpoint.sdpOffer
+						}
+					};
+					janus.restart(details, function(err, result) {
+						if(err) {
+							whip.err('Error restarting:', err.error);
+						} else {
+							// We don't send the answer back
+							whip.info('[' + id + '] Performed restart of endpoint');
+						}
+					});
+				}
+				restartChecked = true;
 			}
 		}
 		// Done
@@ -341,6 +391,8 @@ function setupRest(app) {
 		janus.removeSession({ uuid: endpoint.publisher });
 		endpoint.enabled = false;
 		delete endpoint.publisher;
+		delete endpoint.sdpOffer;
+		delete endpoint.ice;
 		delete endpoint.resource;
 		whip.info('[' + id + '] Terminating WHIP session');
 		// Done
