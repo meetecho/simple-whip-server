@@ -101,6 +101,18 @@ function setupJanus(callback) {
 			}
 			delete janus;
 			janus = null;
+			// Teardown existing endpoints
+			for(var id in endpoints) {
+				var endpoint = endpoints[id];
+				if(!endpoint)
+					continue;
+				endpoint.enabled = false;
+				delete endpoint.publisher;
+				delete endpoint.sdpOffer;
+				delete endpoint.ice;
+				delete endpoint.resource;
+				whip.info('[' + id + '] Terminating WHIP session');
+			}
 			whip.warn("Lost connectivity to Janus, reset the manager and try reconnecting");
 			reconnectingTimer = setTimeout(function() { setupJanus(firstTime ? callback : undefined); }, 2000);
 		});
@@ -311,6 +323,12 @@ function setupRest(app) {
 			res.send('Endpoint ID not published');
 			return;
 		}
+		// Make sure Janus is up and running
+		if(!janus || !janus.isReady() || janus.getState() !== "connected") {
+			res.status(503);
+			res.send('Janus unavailable');
+			return;
+		}
 		// Make sure we received a trickle candidate
 		if(req.headers["content-type"] !== "application/trickle-ice-sdpfrag") {
 			res.status(406);
@@ -378,7 +396,7 @@ function setupRest(app) {
 				res.send('Restart error');
 			} else {
 				// Now that we have a response, trickle the candidates we received
-				if(candidates.length > 0)
+				if(candidates.length > 0 && janus)
 					janus.trickle({ uuid: endpoint.publisher, candidates: candidates });
 				// Read the ICE credentials and send them back
 				var sdpAnswer = result.jsep.sdp;
@@ -420,7 +438,8 @@ function setupRest(app) {
 		}
 		whip.debug("/resource/:", id);
 		// Get rid of the Janus publisher
-		janus.removeSession({ uuid: endpoint.publisher });
+		if(janus)
+			janus.removeSession({ uuid: endpoint.publisher });
 		endpoint.enabled = false;
 		delete endpoint.publisher;
 		delete endpoint.sdpOffer;
@@ -471,7 +490,7 @@ function setupRest(app) {
 		}
 		whip.debug("/endpoint[destroy]/:", id);
 		// Get rid of the Janus publisher, if there's one active
-		if(endpoint.publisher)
+		if(endpoint.publisher && janus)
 			janus.removeSession({ uuid: endpoint.publisher });
 		delete endpoints[id];
 		whip.info('[' + id + '] Destroyed WHIP endpoint');
