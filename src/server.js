@@ -273,10 +273,10 @@ function setupRest(app) {
 				endpoint.resource = config.rest + '/resource/' + id;
 				// Done
 				res.setHeader('Access-Control-Expose-Headers', 'Location');
-				res.setHeader('Content-Type', 'application/sdp');
 				res.setHeader('Location', endpoint.resource);
-				res.status(201);
-				res.send(result.jsep.sdp);
+				res.writeHeader(201, { 'Content-Type': 'application/sdp' });
+				res.write(result.jsep.sdp);
+				res.end();
 			}
 		});
 	});
@@ -366,7 +366,7 @@ function setupRest(app) {
 			if(candidates.length > 0)
 				janus.trickle({ uuid: endpoint.publisher, candidates: candidates });
 			// We're Done
-			res.sendStatus(200);
+			res.sendStatus(204);
 			return;
 		}
 		// If we got here, we need to do an ICE restart, which we do
@@ -405,9 +405,9 @@ function setupRest(app) {
 				var payload =
 					'a=ice-ufrag:' + serverUfrag + '\r\n' +
 					'a=ice-pwd:' + serverPwd + '\r\n';
-				res.setHeader('Content-Type', 'application/trickle-ice-sdpfrag');
-				res.status(200);
-				res.send(payload);
+				res.writeHeader(200, { 'Content-Type': 'application/trickle-ice-sdpfrag' });
+				res.write(payload);
+				res.end();
 			}
 		});
 	});
