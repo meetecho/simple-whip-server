@@ -179,6 +179,7 @@ var whipJanus = function(janusConfig) {
 		}
 		var jsep = details.jsep;
 		var room = details.room;
+		var pin = details.pin;
 		var uuid = details.uuid;
 		var session = sessions[uuid];
 		if(!session) {
@@ -234,6 +235,7 @@ var whipJanus = function(janusConfig) {
 				body: {
 					request: "joinandconfigure",
 					room: room,
+					pin: pin,
 					ptype: "publisher",
 					display: uuid,
 					audio: true,

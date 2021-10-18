@@ -49,6 +49,7 @@ function addOrUpdateEndpoint(endpoint) {
 			'<tr id="endpoint-' + endpoint.id + '">' +
 			'	<td><span class="label label-primary">' + endpoint.id + '</span></td>' +
 			'	<td><span class="label label-info">' + endpoint.room + '</span></td>' +
+			'	<td><span class="label label-info">' + (endpoint.pin ? endpoint.pin : '(none)') + '</span></td>' +
 			'	<td><span class="label label-info">' + (endpoint.token ? endpoint.token : '(none)') + '</span></td>' +
 			'	<td><span class="label label-' + (endpoint.enabled ? 'success' : 'danger') + '" id="state-' + endpoint.id + '">' + (endpoint.enabled ? 'active' : 'idle') + '</span></td>' +
 			'	<td><button class="btn btn-warning btn-xs hide" id="teardown-' + endpoint.id + '">Teardown</button></td>' +
@@ -140,20 +141,26 @@ function createEndpoint() {
 	var content =
 		'<form class="form-horizontal">' +
 		'	<div class="form-group">' +
-		'		<label for="id" class="col-sm-2 control-label">ID</label>' +
-		'		<div class="col-sm-10">' +
+		'		<label for="id" class="col-sm-3 control-label">ID</label>' +
+		'		<div class="col-sm-9">' +
 		'			<input type="text" class="form-control" id="id" placeholder="Insert the Endpoint ID" onkeypress="return checkEnter(this, event);"></input>' +
 		'		</div>' +
 		'	</div>' +
 		'	<div class="form-group">' +
-		'		<label for="room" class="col-sm-2 control-label">Room</label>' +
-		'		<div class="col-sm-10">' +
+		'		<label for="room" class="col-sm-3 control-label">Room</label>' +
+		'		<div class="col-sm-9">' +
 		'			<input type="text" class="form-control" id="room" placeholder="Insert the Janus VideoRoom to publish in" onkeypress="return checkEnter(this, event);"></input>' +
 		'		</div>' +
 		'	</div>' +
 		'	<div class="form-group">' +
-		'		<label for="token" class="col-sm-2 control-label">Token</label>' +
-		'		<div class="col-sm-10">' +
+		'		<label for="pin" class="col-sm-3 control-label">Room PIN</label>' +
+		'		<div class="col-sm-9">' +
+		'			<input type="text" class="form-control" id="pin" placeholder="Insert the Janus VideoRoom PIN (optional)" onkeypress="return checkEnter(this, event);"></input>' +
+		'		</div>' +
+		'	</div>' +
+		'	<div class="form-group">' +
+		'		<label for="token" class="col-sm-3 control-label">WHIP Token</label>' +
+		'		<div class="col-sm-9">' +
 		'			<input type="text" class="form-control" id="token" placeholder="Insert the Authorization token to require (optional)" onkeypress="return checkEnter(this, event);"></input>' +
 		'		</div>' +
 		'	</div>' +
@@ -174,6 +181,7 @@ function createEndpoint() {
 				callback: function() {
 					var id = $('#id').val();
 					var room = $('#room').val();
+					var pin = $('#pin').val();
 					var token = $('#token').val();
 					if(!id || id === '' || !room || room === '') {
 						bootbox.alert('Missing required arguments');
@@ -191,6 +199,8 @@ function createEndpoint() {
 					}
 					// Send the request to create the endpoint
 					var create = { id: id, room: roomNum };
+					if(pin && pin !== '')
+						create.pin = pin;
 					if(token && token !== '')
 						create.token = token;
 					$.ajax({

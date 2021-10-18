@@ -155,6 +155,7 @@ function setupRest(app) {
 		whip.debug("/create:", req.body);
 		var id = req.body.id;
 		var room = req.body.room;
+		var pin = req.body.pin;
 		var token = req.body.token;
 		if(!id || !room) {
 			res.status(400);
@@ -169,6 +170,7 @@ function setupRest(app) {
 		endpoints[id] = {
 			id: id,
 			room: room,
+			pin: pin,
 			token: token,
 			enabled: false
 		};
@@ -245,6 +247,7 @@ function setupRest(app) {
 		var details = {
 			uuid: uuid,
 			room: endpoint.room,
+			pin: endpoint.pin,
 			jsep: {
 				type: 'offer',
 				sdp: req.body
