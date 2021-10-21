@@ -50,6 +50,7 @@ function addOrUpdateEndpoint(endpoint) {
 			'	<td><span class="label label-primary">' + endpoint.id + '</span></td>' +
 			'	<td><span class="label label-info">' + endpoint.room + '</span></td>' +
 			'	<td><span class="label label-info">' + (endpoint.pin ? endpoint.pin : '(none)') + '</span></td>' +
+			'	<td><span class="label label-info">' + endpoint.label + '</span></td>' +
 			'	<td><span class="label label-info">' + (endpoint.token ? endpoint.token : '(none)') + '</span></td>' +
 			'	<td><span class="label label-' + (endpoint.enabled ? 'success' : 'danger') + '" id="state-' + endpoint.id + '">' + (endpoint.enabled ? 'active' : 'idle') + '</span></td>' +
 			'	<td><button class="btn btn-warning btn-xs hide" id="teardown-' + endpoint.id + '">Teardown</button></td>' +
@@ -159,6 +160,12 @@ function createEndpoint() {
 		'		</div>' +
 		'	</div>' +
 		'	<div class="form-group">' +
+		'		<label for="display" class="col-sm-3 control-label">Label/Display</label>' +
+		'		<div class="col-sm-9">' +
+		'			<input type="text" class="form-control" id="display" placeholder="Insert the display name to use in the VideoRoom (optional)" onkeypress="return checkEnter(this, event);"></input>' +
+		'		</div>' +
+		'	</div>' +
+		'	<div class="form-group">' +
 		'		<label for="token" class="col-sm-3 control-label">WHIP Token</label>' +
 		'		<div class="col-sm-9">' +
 		'			<input type="text" class="form-control" id="token" placeholder="Insert the Authorization token to require (optional)" onkeypress="return checkEnter(this, event);"></input>' +
@@ -182,6 +189,7 @@ function createEndpoint() {
 					var id = $('#id').val();
 					var room = $('#room').val();
 					var pin = $('#pin').val();
+					var display = $('#display').val();
 					var token = $('#token').val();
 					if(!id || id === '' || !room || room === '') {
 						bootbox.alert('Missing required arguments');
@@ -201,6 +209,8 @@ function createEndpoint() {
 					var create = { id: id, room: roomNum };
 					if(pin && pin !== '')
 						create.pin = pin;
+					if(display && display !== '')
+						create.label = display;
 					if(token && token !== '')
 						create.token = token;
 					$.ajax({

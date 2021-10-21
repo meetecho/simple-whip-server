@@ -156,6 +156,7 @@ function setupRest(app) {
 		var id = req.body.id;
 		var room = req.body.room;
 		var pin = req.body.pin;
+		var label = req.body.label;
 		var token = req.body.token;
 		if(!id || !room) {
 			res.status(400);
@@ -171,6 +172,7 @@ function setupRest(app) {
 			id: id,
 			room: room,
 			pin: pin,
+			label: label ? label : "WHIP Publisher " + room,
 			token: token,
 			enabled: false
 		};
@@ -222,7 +224,7 @@ function setupRest(app) {
 			res.send('Janus unavailable');
 			return;
 		}
-		var uuid = "WHIP Publisher " + endpoint.room;
+		var uuid = endpoint.label;
 		// Create a new session
 		janus.removeSession({ uuid: uuid });
 		janus.addSession({
