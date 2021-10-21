@@ -277,8 +277,26 @@ function setupRest(app) {
 				whip.info('[' + id + '] Publishing to WHIP endpoint');
 				endpoint.resource = config.rest + '/resource/' + id;
 				// Done
-				res.setHeader('Access-Control-Expose-Headers', 'Location');
+				res.setHeader('Access-Control-Expose-Headers', 'Location, Link');
 				res.setHeader('Location', endpoint.resource);
+				if(config.iceServers && config.iceServers.length > 0) {
+					// Add a Link header for each static ICE server
+					var links = [];
+					for(var server of config.iceServers) {
+						if(!server.uri || (server.uri.indexOf('stun:') !== 0 &&
+								server.uri.indexOf('turn:') !== 0 &&
+								server.uri.indexOf('turns:') !== 0))
+							continue;
+						var link = server.uri + '; rel="ice-server";';
+						if(server.username && server.credential) {
+							link += ' username="' + server.username + '";' +
+								' credential="' + server.credential + '";' +
+								' credential-type: "password";';
+						}
+						links.push(link);
+					}
+					res.setHeader('Link', links);
+				}
 				res.writeHeader(201, { 'Content-Type': 'application/sdp' });
 				res.write(result.jsep.sdp);
 				res.end();

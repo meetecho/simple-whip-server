@@ -23,5 +23,14 @@ module.exports = {
 
 	// Whether we should allow trickle candidates via API: if disabled,
 	// we'll send back an HTTP 405 error as per the specification
-	allowTrickle: true
+	allowTrickle: true,
+
+	// In case we need to always return a set of STUN/TURN servers to
+	// WHIP clients via a Link header, we can put them here
+	iceServers: [
+		//~ { uri: 'stun:stun.example.net' },
+		//~ { uri: 'turn:turn.example.net?transport=udp', username: 'user', credential: 'password' },
+		//~ { uri: 'turn:turn.example.net?transport=tcp', username: 'user', credential: 'password' },
+		//~ { uri: 'turns:turn.example.net?transport=tcp', username: 'user', credential: 'password' },
+	]
 };
