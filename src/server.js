@@ -159,6 +159,7 @@ function setupRest(app) {
 		var pin = req.body.pin;
 		var label = req.body.label;
 		var token = req.body.token;
+		var iceServers = req.body.iceServers;
 		if(!id || !room) {
 			res.status(400);
 			res.send('Invalid arguments');
@@ -175,6 +176,7 @@ function setupRest(app) {
 			pin: pin,
 			label: label ? label : "WHIP Publisher " + room,
 			token: token,
+			iceServers: iceServers,
 			enabled: false
 		};
 		whip.info('[' + id + '] Created new WHIP endpoint');
@@ -212,11 +214,12 @@ function setupRest(app) {
 			}
 		}
 		// Done
-		if(config.iceServers && config.iceServers.length > 0) {
+		var iceServers = endpoint.iceServers ? endpoint.iceServers : config.iceServers;
+		if(iceServers && iceServers.length > 0) {
 			// Add a Link header for each static ICE server
 			res.setHeader('Access-Control-Expose-Headers', 'Link');
 			var links = [];
-			for(var server of config.iceServers) {
+			for(var server of iceServers) {
 				if(!server.uri || (server.uri.indexOf('stun:') !== 0 &&
 						server.uri.indexOf('turn:') !== 0 &&
 						server.uri.indexOf('turns:') !== 0))
@@ -331,10 +334,11 @@ function setupRest(app) {
 				// Done
 				res.setHeader('Access-Control-Expose-Headers', 'Location, Link');
 				res.setHeader('Location', endpoint.resource);
-				if(config.iceServers && config.iceServers.length > 0) {
+				var iceServers = endpoint.iceServers ? endpoint.iceServers : config.iceServers;
+				if(iceServers && iceServers.length > 0) {
 					// Add a Link header for each static ICE server
 					var links = [];
-					for(var server of config.iceServers) {
+					for(var server of iceServers) {
 						if(!server.uri || (server.uri.indexOf('stun:') !== 0 &&
 								server.uri.indexOf('turn:') !== 0 &&
 								server.uri.indexOf('turns:') !== 0))

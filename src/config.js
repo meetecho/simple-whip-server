@@ -26,7 +26,8 @@ module.exports = {
 	allowTrickle: true,
 
 	// In case we need to always return a set of STUN/TURN servers to
-	// WHIP clients via a Link header, we can put them here
+	// WHIP clients via a Link header (unless some servers have been provided
+	// as part of the endpoint creation request), we can put them here
 	iceServers: [
 		//~ { uri: 'stun:stun.example.net' },
 		//~ { uri: 'turn:turn.example.net?transport=udp', username: 'user', credential: 'password' },

@@ -39,7 +39,8 @@ Considering Janus is used as a backend, before a WHIP endpoint can be negotiated
 	"room": <VideoRoom room ID to publish media to>,
 	"pin": <VideoRoom room pin, if required to join (optional)>,
 	"label": <Display name to use in the VideoRoom room (optional)>,
-	"token": "<token to require via Bearer authorization when using WHIP (optional)>
+	"token": "<token to require via Bearer authorization when using WHIP (optional)>,
+	"iceServers": [ array of STUN/TURN servers to return via Link headers (optional) ]
 }
 ```
 
