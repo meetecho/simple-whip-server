@@ -11,6 +11,7 @@
 // Dependencies
 var async = require('async');
 var express = require('express');
+var cors = require('cors');
 var colors = require('colors/safe');
 var debug = require('debug');
 var WhipJanus = require("./whip-janus.js");
@@ -181,6 +182,57 @@ function setupRest(app) {
 		res.sendStatus(200);
 	});
 
+	// OPTIONS associated with publishing to a WHIP endpoint
+	router.options('/endpoint/:id', function(req, res) {
+		// Prepare CORS headers for preflight
+		res.setHeader('Access-Control-Allow-Methods', 'GET,HEAD,PUT,PATCH,POST,DELETE');
+		res.setHeader('Vary', 'Access-Control-Request-Headers');
+		// Authenticate the request, and only return Link headers if valid
+		var id = req.params.id;
+		var endpoint = endpoints[id];
+		if(!id || !endpoint) {
+			res.sendStatus(204);
+			return;
+		}
+		if(endpoint.enabled) {
+			res.sendStatus(204);
+			return;
+		}
+		// Check the Bearer token
+		var auth = req.headers["authorization"];
+		if(endpoint.token) {
+			if(!auth || auth.indexOf('Bearer ') < 0) {
+				res.sendStatus(204);
+				return;
+			}
+			var authtoken = auth.split('Bearer ')[1];
+			if(!authtoken || authtoken.length === 0 || authtoken !== endpoint.token) {
+				res.sendStatus(204);
+				return;
+			}
+		}
+		// Done
+		if(config.iceServers && config.iceServers.length > 0) {
+			// Add a Link header for each static ICE server
+			res.setHeader('Access-Control-Expose-Headers', 'Link');
+			var links = [];
+			for(var server of config.iceServers) {
+				if(!server.uri || (server.uri.indexOf('stun:') !== 0 &&
+						server.uri.indexOf('turn:') !== 0 &&
+						server.uri.indexOf('turns:') !== 0))
+					continue;
+				var link = server.uri + '; rel="ice-server";';
+				if(server.username && server.credential) {
+					link += ' username="' + server.username + '";' +
+						' credential="' + server.credential + '";' +
+						' credential-type="password";';
+				}
+				links.push(link);
+			}
+			res.setHeader('Link', links);
+		}
+		res.sendStatus(204);
+	});
 	// Publish to a WHIP endpoint
 	router.post('/endpoint/:id', function(req, res) {
 		var id = req.params.id;
@@ -522,8 +574,7 @@ function setupRest(app) {
 	});
 
 	// Setup CORS
-	var cors = require('cors');
-	app.use(cors());
+	app.use(cors({ preflightContinue: true }));
 
 	// Initialize the REST API
 	var bodyParser = require('body-parser');
