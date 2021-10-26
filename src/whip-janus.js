@@ -328,7 +328,7 @@ var whipJanus = function(janusConfig) {
 		}
 		var handleInfo = handles[session.handle];
 		// Now send the RTP forward request
-		var max32 = Math.pow(2, 32) - 1
+		var max32 = Math.pow(2, 32) - 1;
 		var forward = {
 			janus: "message",
 			session_id: that.config.janus.session,
