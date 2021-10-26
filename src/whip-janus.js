@@ -180,6 +180,9 @@ var whipJanus = function(janusConfig) {
 		var jsep = details.jsep;
 		var room = details.room;
 		var pin = details.pin;
+		var secret = details.secret;
+		var adminKey = details.adminKey;
+		var recipient = details.recipient;
 		var uuid = details.uuid;
 		var session = sessions[uuid];
 		if(!session) {
@@ -274,6 +277,28 @@ var whipJanus = function(janusConfig) {
 					// Unsubscribe from the transaction
 					delete that.config.janus.transactions[response["transaction"]];
 					handles[handle].publisher = data["id"];
+					// Should we RTP forward too?
+					if(recipient && recipient.host && (recipient.audioPort > 0 || recipient.videoPort > 0)) {
+						// RTP forward the publisher to the specified address
+						var forwardDetails = {
+							uuid: uuid,
+							secret: secret,			// RTP forwarding may need the room secret
+							adminKey: adminKey,		// RTP forwarding may need the plugin Admin Key
+							recipient: recipient
+						};
+						that.forward(forwardDetails, function(err, result) {
+							if(err) {
+								// Something went wrong
+								that.hangup({uuid: uuid });
+								callback(err);
+								return;
+							}
+							// Notify the response
+							var jsep = response["jsep"];
+							callback(null, { jsep: jsep });
+						});
+						return;
+					}
 					// Notify the response
 					var jsep = response["jsep"];
 					callback(null, { jsep: jsep });
@@ -281,6 +306,68 @@ var whipJanus = function(janusConfig) {
 			});
 		});
 	};
+	this.forward = function(details, callback) {
+		callback = (typeof callback === "function") ? callback : noop;
+		whip.debug("Forwarding publisher:", details);
+		if(!details.uuid || !details.recipient) {
+			callback({ error: "Missing mandatory attribute(s)" });
+			return;
+		}
+		var secret = details.secret;
+		var adminKey = details.adminKey;
+		var recipient = details.recipient;
+		var uuid = details.uuid;
+		var session = sessions[uuid];
+		if(!session) {
+			callback({ error: "No such session" });
+			return;
+		}
+		if(!session.handle) {
+			callback({ error: "WebRTC session not established for " + uuid });
+			return;
+		}
+		var handleInfo = handles[session.handle];
+		// Now send the RTP forward request
+		var max32 = Math.pow(2, 32) - 1
+		var forward = {
+			janus: "message",
+			session_id: that.config.janus.session,
+			handle_id: session.handle,
+			body: {
+				request: "rtp_forward",
+				room: handleInfo.room,
+				publisher_id: handleInfo.publisher,
+				secret: secret,
+				admin_key: adminKey,
+				host: recipient.host,
+				host_family: "ipv4",
+				audio_port: recipient.audioPort,
+				audio_ssrc: Math.floor(Math.random() * max32),
+				video_port: recipient.videoPort,
+				video_ssrc: Math.floor(Math.random() * max32),
+				video_rtcp_port: recipient.videoRtcpPort
+			}
+		};
+		whip.debug("Sending forward request:", forward);
+		janusSend(forward, function(response) {
+			delete that.config.janus.transactions[response["transaction"]];
+			var event = response["janus"];
+			if(event === "error") {
+				whip.err("Got an error forwarding:", response["error"].reason);
+				callback({ error: response["error"].reason });
+				return;
+			}
+			// Get the plugin data: is this a success or an error?
+			var data = response.plugindata.data;
+			if(data.error) {
+				whip.err("Got an error forwarding:", data.error);
+				callback({ error: data.error });
+				return;
+			}
+			// Done
+			callback();
+		});
+	}
 	this.trickle = function(details, callback) {
 		callback = (typeof callback === "function") ? callback : noop;
 		whip.debug("Trickling:", details);

@@ -40,7 +40,10 @@ Considering Janus is used as a backend, before a WHIP endpoint can be negotiated
 	"pin": <VideoRoom room pin, if required to join (optional)>,
 	"label": <Display name to use in the VideoRoom room (optional)>,
 	"token": "<token to require via Bearer authorization when using WHIP (optional)>,
-	"iceServers": [ array of STUN/TURN servers to return via Link headers (optional) ]
+	"iceServers": [ array of STUN/TURN servers to return via Link headers (optional) ],
+	"recipient": { ... plain RTP recipient (optional) ... },
+	"secret": <VideoRoom secret, if required for external RTP forwarding (optional)>,
+	"adminKey": <VideoRoom plugin Admin Key, if required for external RTP forwarding (optional)>
 }
 ```
 
