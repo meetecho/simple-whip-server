@@ -286,10 +286,10 @@ var whipJanus = function(janusConfig) {
 							adminKey: adminKey,		// RTP forwarding may need the plugin Admin Key
 							recipient: recipient
 						};
-						that.forward(forwardDetails, function(err, result) {
+						that.forward(forwardDetails, function(err) {
 							if(err) {
 								// Something went wrong
-								that.hangup({uuid: uuid });
+								that.hangup({ uuid: uuid });
 								callback(err);
 								return;
 							}
@@ -331,7 +331,7 @@ var whipJanus = function(janusConfig) {
 		var max32 = Math.pow(2, 32) - 1
 		var forward = {
 			janus: "message",
-			session_id: that.config.janus.session,
+			session_id: that.config.janus.session.id,
 			handle_id: session.handle,
 			body: {
 				request: "rtp_forward",
