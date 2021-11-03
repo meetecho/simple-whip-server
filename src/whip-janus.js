@@ -427,7 +427,7 @@ var whipJanus = function(janusConfig) {
 	function cleanup() {
 		if(that.config.janus.session && that.config.janus.session.timer)
 			clearInterval(that.config.janus.session.timer);
-		delete that.config.janus.session;
+		that.config.janus.session = { id: 0 };
 		that.config.janus.transactions = {};
 		sessions = {};
 		disconnect();
