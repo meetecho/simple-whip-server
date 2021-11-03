@@ -157,10 +157,13 @@ function setupRest(app) {
 		whip.debug("/create:", req.body);
 		var id = req.body.id;
 		var room = req.body.room;
+		var secret = req.body.secret;
+		var adminKey = req.body.adminKey;
 		var pin = req.body.pin;
 		var label = req.body.label;
 		var token = req.body.token;
 		var iceServers = req.body.iceServers;
+		var recipient = req.body.recipient;
 		if(!id || !room) {
 			res.status(400);
 			res.send('Invalid arguments');
@@ -174,10 +177,13 @@ function setupRest(app) {
 		endpoints[id] = {
 			id: id,
 			room: room,
+			secret: secret,
+			adminKey: adminKey,
 			pin: pin,
 			label: label ? label : "WHIP Publisher " + room,
 			token: token,
 			iceServers: iceServers,
+			recipient: recipient,
 			enabled: false
 		};
 		whip.info('[' + id + '] Created new WHIP endpoint');
@@ -311,6 +317,11 @@ function setupRest(app) {
 				sdp: req.body
 			}
 		};
+		if(endpoint.recipient) {
+			details.secret = endpoint.secret;
+			details.adminKey = endpoint.adminKey;
+			details.recipient = endpoint.recipient;
+		}
 		endpoint.enabled = true;
 		endpoint.publisher = uuid;
 		// Take note of SDP and ICE credentials
