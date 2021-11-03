@@ -1,3 +1,5 @@
+'use strict';
+
 /*
  * Simple WHIP server
  *
@@ -100,7 +102,6 @@ function setupJanus(callback) {
 				whip.warn("A reconnection timer has already been set up");
 				return;
 			}
-			delete janus;
 			janus = null;
 			// Teardown existing endpoints
 			for(var id in endpoints) {
@@ -293,9 +294,9 @@ function setupRest(app) {
 			whipId: id,
 			teardown: function(whipId) {
 				// Janus notified us the session is gone, tear it down
-				var endpoint = endpoints[id];
+				var endpoint = endpoints[whipId];
 				if(endpoint) {
-					whip.info('[' + id + '] PeerConnection detected as closed');
+					whip.info('[' + whipId + '] PeerConnection detected as closed');
 					if(endpoint.publisher)
 						janus.removeSession({ uuid: endpoint.publisher });
 					endpoint.enabled = false;
