@@ -1,3 +1,5 @@
+'use strict';
+
 /*
  * Simple WHIP server
  *
@@ -50,8 +52,7 @@ var whipJanus = function(janusConfig) {
 	};
 	whip.debug("Janus:", that.config);
 	// Enrich the configuration with the additional info we need
-	that.config.janus.session = 0;
-	that.config.janus.session.timer = null;
+	that.config.janus.session = { id: 0 };
 	that.config.janus.state = "disconnected";
 	that.config.janus.transactions = {};
 	// Tables
@@ -59,7 +60,7 @@ var whipJanus = function(janusConfig) {
 	var handles = {};		// All Janus handles (map to local sessions here)
 
 	// Public method to check when the class object is ready
-	this.isReady = function() { return that.config.janus.session !== 0; };
+	this.isReady = function() { return that.config.janus.session && that.config.janus.session.id !== 0; };
 	this.getState = function() { return that.config.janus.state; };
 
 	// Connect to Janus via WebSockets
@@ -124,7 +125,7 @@ var whipJanus = function(janusConfig) {
 				}
 			});
 			// Create the session now
-			janusSend({janus: "create"}, function(response) {
+			janusSend({ janus: "create" }, function(response) {
 				whip.debug("Session created:", response);
 				if(response["janus"] === "error") {
 					whip.err("Error creating session:", response["error"]["reason"]);
@@ -133,12 +134,12 @@ var whipJanus = function(janusConfig) {
 				}
 				// Unsubscribe from this transaction as well
 				delete that.config.janus.transactions[response["transaction"]];
-				that.config.janus.session = response["data"]["id"];
-				whip.info("Janus session ID is " + that.config.janus.session);
+				that.config.janus.session.id = response["data"]["id"];
+				whip.info("Janus session ID is " + that.config.janus.session.id);
 				// We need to send keep-alives on a regular basis
 				that.config.janus.session.timer = setInterval(function() {
 					// Send keep-alive
-					janusSend({janus: "keepalive", session_id: that.config.janus.session}, function(response) {
+					janusSend({ janus: "keepalive", session_id: that.config.janus.session.id }, function(response) {
 						// Unsubscribe from this keep-alive transaction
 						delete that.config.janus.transactions[response["transaction"]];
 					});
@@ -165,7 +166,6 @@ var whipJanus = function(janusConfig) {
 		whip.debug("Removing user:", details);
 		var uuid = details.uuid;
 		this.hangup({ uuid: uuid });
-		var session = sessions[uuid];
 		delete sessions[uuid];
 	};
 
@@ -194,7 +194,7 @@ var whipJanus = function(janusConfig) {
 		whip.debug("Creating handle for session " + uuid);
 		var attach = {
 			janus: "attach",
-			session_id: that.config.janus.session,
+			session_id: that.config.janus.session.id,
 			plugin: "janus.plugin.videoroom"
 		};
 		janusSend(attach, function(response) {
@@ -217,7 +217,7 @@ var whipJanus = function(janusConfig) {
 				// Send a trickle candidates bunch request
 				var candidates = {
 					janus: "trickle",
-					session_id: that.config.janus.session,
+					session_id: that.config.janus.session.id,
 					handle_id: handle,
 					candidates: session.candidates
 				}
@@ -230,7 +230,7 @@ var whipJanus = function(janusConfig) {
 			// Send a request to the plugin to publish
 			var publish = {
 				janus: "message",
-				session_id: that.config.janus.session,
+				session_id: that.config.janus.session.id,
 				handle_id: handle,
 				body: {
 					request: "joinandconfigure",
@@ -305,7 +305,7 @@ var whipJanus = function(janusConfig) {
 		// Send a trickle request
 		var trickle = {
 			janus: "trickle",
-			session_id: that.config.janus.session,
+			session_id: that.config.janus.session.id,
 			handle_id: session.handle,
 			candidate: candidate
 		}
@@ -331,7 +331,7 @@ var whipJanus = function(janusConfig) {
 		// Send a request to the plugin with the new SDP to restart
 		var restart = {
 			janus: "message",
-			session_id: that.config.janus.session,
+			session_id: that.config.janus.session.id,
 			handle_id: session.handle,
 			body: {
 				request: "configure",
@@ -398,7 +398,7 @@ var whipJanus = function(janusConfig) {
 		// We hangup sending a detach request
 		var hangup = {
 			janus: "detach",
-			session_id: that.config.janus.session,
+			session_id: that.config.janus.session.id,
 			handle_id: handle
 		}
 		janusSend(hangup, function(response) {
@@ -418,20 +418,21 @@ var whipJanus = function(janusConfig) {
 			try {
 				that.config.ws.connection.close();
 				that.config.ws.connection = null;
-			} catch(e) {};
+			} catch(e) {
+				// Don't care
+			}
 		}
 		that.config.ws = null;
-	};
+	}
 	function cleanup() {
-		if(that.config.janus.session.timer)
+		if(that.config.janus.session && that.config.janus.session.timer)
 			clearInterval(that.config.janus.session.timer);
-		that.config.janus.session.timer = null;
-		that.config.janus.session = 0;
+		delete that.config.janus.session;
 		that.config.janus.transactions = {};
 		sessions = {};
 		disconnect();
 		that.config.janus.state = "disconnected";
-	};
+	}
 
 	// Private method to send requests to Janus
 	function janusSend(message, responseCallback) {
@@ -449,7 +450,7 @@ var whipJanus = function(janusConfig) {
 
 	// Private method to create random identifiers (e.g., transaction)
 	function randomString(len) {
-		charSet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+		var charSet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
 		var randomString = '';
 		for (var i = 0; i < len; i++) {
 			var randomPoz = Math.floor(Math.random() * charSet.length);
