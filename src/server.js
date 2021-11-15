@@ -16,14 +16,13 @@ var express = require('express');
 var cors = require('cors');
 var colors = require('colors/safe');
 var debug = require('debug');
-var WhipJanus = require("./whip-janus.js");
+var WhipJanus = require('./whip-janus.js');
 
 // Debugging
 var whip = {
 	debug: debug('whip:debug'),
 	err: debug('whip:error'),
 	warn: debug('whip:warn'),
-	timer: debug('whip:timer'),
 	info: debug('whip:info')
 };
 
@@ -37,14 +36,14 @@ var endpoints = {};
 // Startup
 async.series([
 	// 1. Connect to Janus
-	function(callback) {
-		console.log(colors.yellow("[1. Janus]"));
-		console.log("Connecting to Janus:", config.janus);
+	function (callback) {
+		console.log(colors.yellow('[1. Janus]'));
+		console.log('Connecting to Janus:', config.janus);
 		setupJanus(callback);
 	},
 	// 2. WHIP REST API
-	function(callback) {
-		console.log(colors.yellow("[2. WHIP REST API]"));
+	function (callback) {
+		console.log(colors.yellow('[2. WHIP REST API]'));
 		// Create REST backend via express
 		var app = express();
 		app.use(express.static('web'));
@@ -52,7 +51,7 @@ async.series([
 		// Are we using plain HTTP or HTTPS?
 		var options = null;
 		var https = (config.https && config.https.cert && config.https.key);
-		if(https) {
+		if (https) {
 			var fs = require('fs');
 			options = {
 				cert: fs.readFileSync(config.https.cert, 'utf8'),
@@ -61,52 +60,52 @@ async.series([
 			};
 		}
 		var http = require(https ? 'https' : 'http').createServer(options, app);
-		http.on('error', function(err) {
-			console.log('Web server error:', err)
-			if(err.code == 'EADDRINUSE') {
+		http.on('error', function (err) {
+			console.log('Web server error:', err);
+			if (err.code == 'EADDRINUSE') {
 				callback('Port ' + config.port + ' for WHIP REST API already in use');
 			} else {
 				callback('Error creating WHIP REST API:', err);
 			}
 		});
-		http.listen(config.port, function() {
+		http.listen(config.port, function () {
 			console.log('WHIP REST API listening on *:' + config.port);
-			callback(null, "WHIP REST API OK");
+			callback(null, 'WHIP REST API OK');
 		});
 	}
 ],
-function(err, results) {
-	if(err) {
-		console.log(colors.red("WHIP server prototype failed to start :-("));
-		console.log(err);
-		process.exit(1);
-	} else {
-		// We're up and running
-		console.log(colors.cyan("WHIP server prototype started!"));
-		console.log(results);
-	}
-});
+	function (err, results) {
+		if (err) {
+			console.log(colors.red('WHIP server prototype failed to start :-('));
+			console.log(err);
+			process.exit(1);
+		} else {
+			// We're up and running
+			console.log(colors.cyan('WHIP server prototype started!'));
+			console.log(results);
+		}
+	});
 
 // Janus setup
 var firstTime = true;
 var reconnectingTimer = null;
-var noop = function() {};
+var noop = function () { };
 function setupJanus(callback) {
-	callback = (typeof callback == "function") ? callback : noop;
+	callback = (typeof callback == 'function') ? callback : noop;
 	reconnectingTimer = null;
-	if(!janus) {
+	if (!janus) {
 		janus = new WhipJanus(config.janus);
-		janus.on("disconnected", function() {
+		janus.once('disconnected', function () {
 			// Event to detect when we loose Janus, try reconnecting
-			if(reconnectingTimer) {
-				whip.warn("A reconnection timer has already been set up");
+			if (reconnectingTimer) {
+				whip.warn('A reconnection timer has already been set up');
 				return;
 			}
 			janus = null;
 			// Teardown existing endpoints
-			for(var id in endpoints) {
+			for (var id in endpoints) {
 				var endpoint = endpoints[id];
-				if(!endpoint)
+				if (!endpoint)
 					continue;
 				endpoint.enabled = false;
 				delete endpoint.publisher;
@@ -115,19 +114,23 @@ function setupJanus(callback) {
 				delete endpoint.resource;
 				whip.info('[' + id + '] Terminating WHIP session');
 			}
-			whip.warn("Lost connectivity to Janus, reset the manager and try reconnecting");
-			reconnectingTimer = setTimeout(function() { setupJanus(firstTime ? callback : undefined); }, 2000);
+			whip.warn('Lost connectivity to Janus, reset the manager and try reconnecting');
+			reconnectingTimer = setTimeout(function () { setupJanus(firstTime ? callback : undefined); }, 2000);
 		});
 	}
-	janus.connect(function(err) {
-		if(err) {
-			whip.warn("Error connecting, will retry later:", err.error);
+	janus.connect().then(_ => {
+		// Connected
+		whip.info('Connected to Janus:', config.janus.address);
+		firstTime = false;
+		callback(null, 'Janus OK');
+	}).catch(e => {
+		if (janus.isConnecting() || janus.isConnected()) {
+			callback(null, 'Janus OK');
 			return;
 		}
-		// Connected
-		whip.info("Connected to Janus:", config.janus.address);
-		firstTime = false;
-		callback(null, "Janus OK");
+		whip.warn('Error connecting, will retry later:', e.message);
+		reconnectingTimer = setTimeout(function () { setupJanus(firstTime ? callback : undefined); }, 2000);
+		return;
 	});
 }
 
@@ -136,25 +139,25 @@ function setupRest(app) {
 	var router = express.Router();
 
 	// Just a helper to make sure this API is up and running
-	router.get('/healthcheck', function(req, res) {
-		whip.debug("/healthcheck:", req.params);
+	router.get('/healthcheck', function (req, res) {
+		whip.debug('/healthcheck:', req.params);
 		res.sendStatus(200);
 	});
 
 	// Return a list of the configured endpoints
-	router.get('/endpoints', function(req, res) {
-		whip.debug("/endpoints:", req.params);
+	router.get('/endpoints', function (req, res) {
+		whip.debug('/endpoints:', req.params);
 		res.setHeader('content-type', 'application/json');
 		res.status(200);
 		var list = [];
-		for(var id in endpoints)
+		for (var id in endpoints)
 			list.push(endpoints[id]);
 		res.send(JSON.stringify(list));
 	});
 
 	// Simple, non-standard, interface to create endpoints and map them to Janus rooms
-	router.post('/create', function(req, res) {
-		whip.debug("/create:", req.body);
+	router.post('/create', function (req, res) {
+		whip.debug('/create:', req.body);
 		var id = req.body.id;
 		var room = req.body.room;
 		var secret = req.body.secret;
@@ -164,12 +167,12 @@ function setupRest(app) {
 		var token = req.body.token;
 		var iceServers = req.body.iceServers;
 		var recipient = req.body.recipient;
-		if(!id || !room) {
+		if (!id || !room) {
 			res.status(400);
 			res.send('Invalid arguments');
 			return;
 		}
-		if(endpoints[id]) {
+		if (endpoints[id]) {
 			res.status(400);
 			res.send('Endpoint already exists');
 			return;
@@ -180,7 +183,7 @@ function setupRest(app) {
 			secret: secret,
 			adminKey: adminKey,
 			pin: pin,
-			label: label ? label : "WHIP Publisher " + room,
+			label: label ? label : 'WHIP Publisher ' + room,
 			token: token,
 			iceServers: iceServers,
 			recipient: recipient,
@@ -192,47 +195,47 @@ function setupRest(app) {
 	});
 
 	// OPTIONS associated with publishing to a WHIP endpoint
-	router.options('/endpoint/:id', function(req, res) {
+	router.options('/endpoint/:id', function (req, res) {
 		// Prepare CORS headers for preflight
 		res.setHeader('Access-Control-Allow-Methods', 'GET,HEAD,PUT,PATCH,POST,DELETE');
 		res.setHeader('Vary', 'Access-Control-Request-Headers');
 		// Authenticate the request, and only return Link headers if valid
 		var id = req.params.id;
 		var endpoint = endpoints[id];
-		if(!id || !endpoint) {
+		if (!id || !endpoint) {
 			res.sendStatus(204);
 			return;
 		}
-		if(endpoint.enabled) {
+		if (endpoint.enabled) {
 			res.sendStatus(204);
 			return;
 		}
 		// Check the Bearer token
-		var auth = req.headers["authorization"];
-		if(endpoint.token) {
-			if(!auth || auth.indexOf('Bearer ') < 0) {
+		var auth = req.headers['authorization'];
+		if (endpoint.token) {
+			if (!auth || auth.indexOf('Bearer ') < 0) {
 				res.sendStatus(204);
 				return;
 			}
 			var authtoken = auth.split('Bearer ')[1];
-			if(!authtoken || authtoken.length === 0 || authtoken !== endpoint.token) {
+			if (!authtoken || authtoken.length === 0 || authtoken !== endpoint.token) {
 				res.sendStatus(204);
 				return;
 			}
 		}
 		// Done
 		var iceServers = endpoint.iceServers ? endpoint.iceServers : config.iceServers;
-		if(iceServers && iceServers.length > 0) {
+		if (iceServers && iceServers.length > 0) {
 			// Add a Link header for each static ICE server
 			res.setHeader('Access-Control-Expose-Headers', 'Link');
 			var links = [];
-			for(var server of iceServers) {
-				if(!server.uri || (server.uri.indexOf('stun:') !== 0 &&
-						server.uri.indexOf('turn:') !== 0 &&
-						server.uri.indexOf('turns:') !== 0))
+			for (var server of iceServers) {
+				if (!server.uri || (server.uri.indexOf('stun:') !== 0 &&
+					server.uri.indexOf('turn:') !== 0 &&
+					server.uri.indexOf('turns:') !== 0))
 					continue;
 				var link = server.uri + '; rel="ice-server";';
-				if(server.username && server.credential) {
+				if (server.username && server.credential) {
 					link += ' username="' + server.username + '";' +
 						' credential="' + server.credential + '";' +
 						' credential-type="password";';
@@ -244,44 +247,44 @@ function setupRest(app) {
 		res.sendStatus(204);
 	});
 	// Publish to a WHIP endpoint
-	router.post('/endpoint/:id', function(req, res) {
+	router.post('/endpoint/:id', async function (req, res) {
 		var id = req.params.id;
 		var endpoint = endpoints[id];
-		if(!id || !endpoint) {
+		if (!id || !endpoint) {
 			res.status(404);
 			res.send('Invalid endpoint ID');
 			return;
 		}
-		if(endpoint.enabled) {
+		if (endpoint.enabled) {
 			res.status(403);
 			res.send('Endpoint ID already in use');
 			return;
 		}
-		whip.debug("/endpoint/:", id);
+		whip.debug('/endpoint/:', id);
 		whip.debug(req.body);
 		// Make sure we received an SDP
-		if(req.headers["content-type"] !== "application/sdp" || req.body.indexOf('v=0') < 0) {
+		if (req.headers['content-type'] !== 'application/sdp' || req.body.indexOf('v=0') < 0) {
 			res.status(406);
 			res.send('Unsupported content type');
 			return;
 		}
 		// Check the Bearer token
-		var auth = req.headers["authorization"];
-		if(endpoint.token) {
-			if(!auth || auth.indexOf('Bearer ') < 0) {
+		var auth = req.headers['authorization'];
+		if (endpoint.token) {
+			if (!auth || auth.indexOf('Bearer ') < 0) {
 				res.status(403);
 				res.send('Unauthorized');
 				return;
 			}
 			var authtoken = auth.split('Bearer ')[1];
-			if(!authtoken || authtoken.length === 0 || authtoken !== endpoint.token) {
+			if (!authtoken || authtoken.length === 0 || authtoken !== endpoint.token) {
 				res.status(403);
 				res.send('Unauthorized');
 				return;
 			}
 		}
 		// Make sure Janus is up and running
-		if(!janus || !janus.isReady() || janus.getState() !== "connected") {
+		if (!janus || !janus.isReady()) {
 			res.status(503);
 			res.send('Janus unavailable');
 			return;
@@ -292,12 +295,12 @@ function setupRest(app) {
 		janus.addSession({
 			uuid: uuid,
 			whipId: id,
-			teardown: function(whipId) {
+			teardown: function (whipId) {
 				// Janus notified us the session is gone, tear it down
 				var endpoint = endpoints[whipId];
-				if(endpoint) {
+				if (endpoint) {
 					whip.info('[' + whipId + '] PeerConnection detected as closed');
-					if(endpoint.publisher)
+					if (endpoint.publisher)
 						janus.removeSession({ uuid: endpoint.publisher });
 					endpoint.enabled = false;
 					delete endpoint.publisher;
@@ -317,7 +320,7 @@ function setupRest(app) {
 				sdp: req.body
 			}
 		};
-		if(endpoint.recipient) {
+		if (endpoint.recipient) {
 			details.secret = endpoint.secret;
 			details.adminKey = endpoint.adminKey;
 			details.recipient = endpoint.recipient;
@@ -330,98 +333,98 @@ function setupRest(app) {
 			ufrag: endpoint.sdpOffer.match(/a=ice-ufrag:(.*)\r\n/)[1],
 			pwd: endpoint.sdpOffer.match(/a=ice-pwd:(.*)\r\n/)[1]
 		};
+		whip.info('[' + id + '] Publishing to WHIP endpoint');
 		// Publish
-		janus.publish(details, function(err, result) {
-			// Make sure we got an ANSWER back
-			if(err) {
-				endpoint.enabled = false;
-				delete endpoint.publisher;
-				delete endpoint.sdpOffer;
-				delete endpoint.ice;
-				res.status(500);
-				res.send(err.error);
-			} else {
-				whip.info('[' + id + '] Publishing to WHIP endpoint');
-				endpoint.resource = config.rest + '/resource/' + id;
-				// Done
-				res.setHeader('Access-Control-Expose-Headers', 'Location, Link');
-				res.setHeader('Location', endpoint.resource);
-				var iceServers = endpoint.iceServers ? endpoint.iceServers : config.iceServers;
-				if(iceServers && iceServers.length > 0) {
-					// Add a Link header for each static ICE server
-					var links = [];
-					for(var server of iceServers) {
-						if(!server.uri || (server.uri.indexOf('stun:') !== 0 &&
-								server.uri.indexOf('turn:') !== 0 &&
-								server.uri.indexOf('turns:') !== 0))
-							continue;
-						var link = server.uri + '; rel="ice-server";';
-						if(server.username && server.credential) {
-							link += ' username="' + server.username + '";' +
-								' credential="' + server.credential + '";' +
-								' credential-type: "password";';
-						}
-						links.push(link);
-					}
-					res.setHeader('Link', links);
+		let result;
+		try {
+			result = await janus.publish(details);
+		} catch (e) {
+			endpoint.enabled = false;
+			delete endpoint.publisher;
+			delete endpoint.sdpOffer;
+			delete endpoint.ice;
+			res.status(500);
+			res.send(e.message);
+			return;
+		}
+		endpoint.resource = config.rest + '/resource/' + id;
+		// Done
+		res.setHeader('Access-Control-Expose-Headers', 'Location, Link');
+		res.setHeader('Location', endpoint.resource);
+		var iceServers = endpoint.iceServers ? endpoint.iceServers : config.iceServers;
+		if (iceServers && iceServers.length > 0) {
+			// Add a Link header for each static ICE server
+			var links = [];
+			for (var server of iceServers) {
+				if (!server.uri || (server.uri.indexOf('stun:') !== 0 &&
+					server.uri.indexOf('turn:') !== 0 &&
+					server.uri.indexOf('turns:') !== 0))
+					continue;
+				var link = server.uri + '; rel="ice-server";';
+				if (server.username && server.credential) {
+					link += ' username="' + server.username + '";' +
+						' credential="' + server.credential + '";' +
+						' credential-type: "password";';
 				}
-				res.writeHeader(201, { 'Content-Type': 'application/sdp' });
-				res.write(result.jsep.sdp);
-				res.end();
+				links.push(link);
 			}
-		});
+			res.setHeader('Link', links);
+		}
+		res.writeHead(201, { 'Content-Type': 'application/sdp' });
+		res.write(result.jsep.sdp);
+		res.end();
 	});
 
 	// GET, HEAD and PUT on the endpoint must return a 405
-	router.get('/endpoint/:id', function(req, res) {
+	router.get('/endpoint/:id', function (_, res) {
 		res.sendStatus(405);
 	});
-	router.head('/endpoint/:id', function(req, res) {
+	router.head('/endpoint/:id', function (_, res) {
 		res.sendStatus(405);
 	});
-	router.put('/endpoint/:id', function(req, res) {
+	router.put('/endpoint/:id', function (_, res) {
 		res.sendStatus(405);
 	});
 
 	// Trickle a WHIP resource
-	router.patch('/resource/:id', function(req, res) {
+	router.patch('/resource/:id', async function (req, res) {
 		var id = req.params.id;
 		var endpoint = endpoints[id];
-		if(!id || !endpoint) {
+		if (!id || !endpoint) {
 			res.status(404);
 			res.send('Invalid endpoint ID');
 			return;
 		}
-		whip.debug("/resource[trickle]/:", id);
+		whip.debug('/resource[trickle]/:', id);
 		whip.debug(req.body);
 		// Check the Bearer token
-		var auth = req.headers["authorization"];
-		if(endpoint.token) {
-			if(!auth || auth.indexOf('Bearer ') < 0) {
+		var auth = req.headers['authorization'];
+		if (endpoint.token) {
+			if (!auth || auth.indexOf('Bearer ') < 0) {
 				res.status(403);
 				res.send('Unauthorized');
 				return;
 			}
 			var authtoken = auth.split('Bearer ')[1];
-			if(!authtoken || authtoken.length === 0 || authtoken !== endpoint.token) {
+			if (!authtoken || authtoken.length === 0 || authtoken !== endpoint.token) {
 				res.status(403);
 				res.send('Unauthorized');
 				return;
 			}
 		}
-		if(!endpoint.enabled) {
+		if (!endpoint.enabled) {
 			res.status(403);
 			res.send('Endpoint ID not published');
 			return;
 		}
 		// Make sure Janus is up and running
-		if(!janus || !janus.isReady() || janus.getState() !== "connected") {
+		if (!janus || !janus.isReady()) {
 			res.status(503);
 			res.send('Janus unavailable');
 			return;
 		}
 		// Make sure we received a trickle candidate
-		if(req.headers["content-type"] !== "application/trickle-ice-sdpfrag") {
+		if (req.headers['content-type'] !== 'application/trickle-ice-sdpfrag') {
 			res.status(406);
 			res.send('Unsupported content type');
 			return;
@@ -431,31 +434,31 @@ function setupRest(app) {
 		var lines = fragment.split(/\r?\n/);
 		var iceUfrag = null, icePwd = null, restart = false;
 		var candidates = [];
-		for(var line of lines) {
-			if(line.indexOf('a=ice-ufrag:') === 0) {
+		for (var line of lines) {
+			if (line.indexOf('a=ice-ufrag:') === 0) {
 				iceUfrag = line.split('a=ice-ufrag:')[1];
-			} else if(line.indexOf('a=ice-pwd:') === 0) {
+			} else if (line.indexOf('a=ice-pwd:') === 0) {
 				icePwd = line.split('a=ice-pwd:')[1];
-			} else if(line.indexOf("a=candidate:") === 0) {
+			} else if (line.indexOf('a=candidate:') === 0) {
 				var candidate = {
 					sdpMLineIndex: 0,
 					candidate: line.split('a=')[1]
 				};
 				candidates.push(candidate);
-			} else if(line.indexOf("a=end-of-candidates") === 0) {
+			} else if (line.indexOf('a=end-of-candidates') === 0) {
 				// Signal there won't be any more candidates
 				candidates.push({ completed: true });
 			}
 		}
 		// Check if there's a restart involved
-		if(iceUfrag && icePwd && (iceUfrag !== endpoint.ice.ufrag || icePwd !== endpoint.ice.pwd)) {
+		if (iceUfrag && icePwd && (iceUfrag !== endpoint.ice.ufrag || icePwd !== endpoint.ice.pwd)) {
 			// We need to restart
 			restart = true;
 		}
-		if(!restart) {
+		if (!restart) {
 			// Trickle the candidate(s)
-			if(candidates.length > 0)
-				janus.trickle({ uuid: endpoint.publisher, candidates: candidates });
+			if (candidates.length > 0)
+				janus.trickle({ uuid: endpoint.publisher, candidates: candidates }).catch(_ => { });
 			// We're Done
 			res.sendStatus(204);
 			return;
@@ -480,108 +483,107 @@ function setupRest(app) {
 			}
 		};
 		whip.info('[' + id + '] Performing ICE restart');
-		janus.restart(details, function(err, result) {
-			if(err) {
-				whip.err('Error restarting:', err.error);
-				res.status(400);
-				res.send('Restart error');
-			} else {
-				// Now that we have a response, trickle the candidates we received
-				if(candidates.length > 0 && janus)
-					janus.trickle({ uuid: endpoint.publisher, candidates: candidates });
-				// Read the ICE credentials and send them back
-				var sdpAnswer = result.jsep.sdp;
-				var serverUfrag = sdpAnswer.match(/a=ice-ufrag:(.*)\r\n/)[1];
-				var serverPwd = sdpAnswer.match(/a=ice-pwd:(.*)\r\n/)[1];
-				var payload =
-					'a=ice-ufrag:' + serverUfrag + '\r\n' +
-					'a=ice-pwd:' + serverPwd + '\r\n';
-				res.writeHeader(200, { 'Content-Type': 'application/trickle-ice-sdpfrag' });
-				res.write(payload);
-				res.end();
-			}
-		});
+		try {
+			const result = await janus.restart(details);
+			// Now that we have a response, trickle the candidates we received
+			if (candidates.length > 0 && janus)
+				janus.trickle({ uuid: endpoint.publisher, candidates: candidates }).catch(_ => { });
+			// Read the ICE credentials and send them back
+			var sdpAnswer = result.jsep.sdp;
+			var serverUfrag = sdpAnswer.match(/a=ice-ufrag:(.*)\r\n/)[1];
+			var serverPwd = sdpAnswer.match(/a=ice-pwd:(.*)\r\n/)[1];
+			var payload =
+				'a=ice-ufrag:' + serverUfrag + '\r\n' +
+				'a=ice-pwd:' + serverPwd + '\r\n';
+			res.writeHead(200, { 'Content-Type': 'application/trickle-ice-sdpfrag' });
+			res.write(payload);
+			res.end();
+		} catch (error) {
+			whip.err('Error restarting:', error.message);
+			res.status(400);
+			res.send('Restart error');
+		}
 	});
 
 	// Stop publishing to a WHIP endpoint
-	router.delete('/resource/:id', function(req, res) {
+	router.delete('/resource/:id', function (req, res) {
 		var id = req.params.id;
 		var endpoint = endpoints[id];
-		if(!id || !endpoint || !endpoint.enabled || !endpoint.publisher) {
+		if (!id || !endpoint || !endpoint.enabled || !endpoint.publisher) {
 			res.status(404);
 			res.send('Invalid resource ID');
 			return;
 		}
 		// Check the Bearer token
-		var auth = req.headers["authorization"];
-		if(endpoint.token) {
-			if(!auth || auth.indexOf('Bearer ') < 0) {
+		var auth = req.headers['authorization'];
+		if (endpoint.token) {
+			if (!auth || auth.indexOf('Bearer ') < 0) {
 				res.status(403);
 				res.send('Unauthorized');
 				return;
 			}
 			var authtoken = auth.split('Bearer ')[1];
-			if(!authtoken || authtoken.length === 0 || authtoken !== endpoint.token) {
+			if (!authtoken || authtoken.length === 0 || authtoken !== endpoint.token) {
 				res.status(403);
 				res.send('Unauthorized');
 				return;
 			}
 		}
-		whip.debug("/resource/:", id);
+		whip.debug('/resource/:', id);
 		// Get rid of the Janus publisher
-		if(janus)
+		whip.info('[' + id + '] Terminating WHIP session');
+		if (janus)
 			janus.removeSession({ uuid: endpoint.publisher });
 		endpoint.enabled = false;
 		delete endpoint.publisher;
 		delete endpoint.sdpOffer;
 		delete endpoint.ice;
 		delete endpoint.resource;
-		whip.info('[' + id + '] Terminating WHIP session');
 		// Done
 		res.sendStatus(200);
 	});
 
 	// GET, HEAD, POST and PUT on the resource must return a 405
-	router.get('/resource/:id', function(req, res) {
+	router.get('/resource/:id', function (_, res) {
 		res.sendStatus(405);
 	});
-	router.head('/resource/:id', function(req, res) {
+	router.head('/resource/:id', function (_, res) {
 		res.sendStatus(405);
 	});
-	router.post('/resource/:id', function(req, res) {
+	router.post('/resource/:id', function (_, res) {
 		res.sendStatus(405);
 	});
-	router.put('/resource/:id', function(req, res) {
+	router.put('/resource/:id', function (_, res) {
 		res.sendStatus(405);
 	});
 
 	// Simple, non-standard, interface to destroy existing endpoints
-	router.delete('/endpoint/:id', function(req, res) {
+	router.delete('/endpoint/:id', function (req, res) {
 		var id = req.params.id;
 		var endpoint = endpoints[id];
-		if(!id || !endpoint) {
+		if (!id || !endpoint) {
 			res.status(404);
 			res.send('Invalid resource ID');
 			return;
 		}
 		// Check the Bearer token
-		var auth = req.headers["authorization"];
-		if(endpoint.token) {
-			if(!auth || auth.indexOf('Bearer ') < 0) {
+		var auth = req.headers['authorization'];
+		if (endpoint.token) {
+			if (!auth || auth.indexOf('Bearer ') < 0) {
 				res.status(403);
 				res.send('Unauthorized');
 				return;
 			}
 			var authtoken = auth.split('Bearer ')[1];
-			if(!authtoken || authtoken.length === 0 || authtoken !== endpoint.token) {
+			if (!authtoken || authtoken.length === 0 || authtoken !== endpoint.token) {
 				res.status(403);
 				res.send('Unauthorized');
 				return;
 			}
 		}
-		whip.debug("/endpoint[destroy]/:", id);
+		whip.debug('/endpoint[destroy]/:', id);
 		// Get rid of the Janus publisher, if there's one active
-		if(endpoint.publisher && janus)
+		if (endpoint.publisher && janus)
 			janus.removeSession({ uuid: endpoint.publisher });
 		delete endpoints[id];
 		whip.info('[' + id + '] Destroyed WHIP endpoint');
