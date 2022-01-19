@@ -1,12 +1,12 @@
 module.exports = {
     "env": {
-        "browser": false,
+        "browser": true,
+        "jquery": true,
         "node": true,
         "es2021": true
     },
     "extends": [
-        "eslint:recommended",
-        "jquery"
+        "eslint:recommended"
     ],
     "parserOptions": {
         "sourceType": "module"
