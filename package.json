@@ -14,18 +14,20 @@
 		"name": "Lorenzo Miniero",
 		"email": "lorenzo@meetecho.com"
 	},
-	"main": "src/server.js",
+	"type": "module",
+	"exports": "./src/server.js",
 	"dependencies": {
 		"async": ">= 1.5.2",
 		"colors": ">= 1.1.2",
 		"cors": "^2.8.5",
 		"debug": ">= 2.2.0",
 		"express": ">= 4.12.3",
-		"websocket": ">= 1.0.25"
+		"websocket": ">= 1.0.25",
+		"janode": "1.6.1"
 	},
 	"scripts": {
 		"build": "npm install --production",
-		"start": "DEBUG=whip:*,-whip:debug,janus:*,-janus:debug,-janus:vdebug node src/server.js",
-		"start-debug": "DEBUG=whip:*,janus:* node src/server.js"
+		"start": "DEBUG=whip:*,-whip:debug,janus:*,-janus:debug,-janus:vdebug node src/server.js --janode-log=none",
+		"start-debug": "DEBUG=whip:*,janus:* node src/server.js --janode-log=debug"
 	}
 }

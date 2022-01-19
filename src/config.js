@@ -1,4 +1,4 @@
-module.exports = {
+export default {
 
 	// Janus info
 	janus: {
@@ -12,11 +12,11 @@ module.exports = {
 	port: 7080,
 	// By default we create a plain HTTP backend, but you can turn that
 	// into an HTTPS one instead if you configure the certificate to use
-	//~ https: {
-		//~ cert: '/path/to/certificate',
-		//~ key: '/path/to/privatekey',
-		//~ passphrase: 'key passphrase, if required'
-	//~ },
+	// https: {
+	// 	cert: '/path/to/certificate',
+	// 	key: '/path/to/privatekey',
+	// 	passphrase: 'key passphrase, if required'
+	// },
 
 	// Base path for the REST WHIP API
 	rest: '/whip',
@@ -29,9 +29,9 @@ module.exports = {
 	// WHIP clients via a Link header (unless some servers have been provided
 	// as part of the endpoint creation request), we can put them here
 	iceServers: [
-		//~ { uri: 'stun:stun.example.net' },
-		//~ { uri: 'turn:turn.example.net?transport=udp', username: 'user', credential: 'password' },
-		//~ { uri: 'turn:turn.example.net?transport=tcp', username: 'user', credential: 'password' },
-		//~ { uri: 'turns:turn.example.net?transport=tcp', username: 'user', credential: 'password' },
+		// { uri: 'stun:stun.example.net' },
+		// { uri: 'turn:turn.example.net?transport=udp', username: 'user', credential: 'password' },
+		// { uri: 'turn:turn.example.net?transport=tcp', username: 'user', credential: 'password' },
+		// { uri: 'turns:turn.example.net?transport=tcp', username: 'user', credential: 'password' },
 	]
 };
