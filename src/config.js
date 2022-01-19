@@ -29,9 +29,9 @@ export default {
 	// WHIP clients via a Link header (unless some servers have been provided
 	// as part of the endpoint creation request), we can put them here
 	iceServers: [
-		//~ { uri: 'stun:stun.example.net' },
-		//~ { uri: 'turn:turn.example.net?transport=udp', username: 'user', credential: 'password' },
-		//~ { uri: 'turn:turn.example.net?transport=tcp', username: 'user', credential: 'password' },
-		//~ { uri: 'turns:turn.example.net?transport=tcp', username: 'user', credential: 'password' },
+		// { uri: 'stun:stun.example.net' },
+		// { uri: 'turn:turn.example.net?transport=udp', username: 'user', credential: 'password' },
+		// { uri: 'turn:turn.example.net?transport=tcp', username: 'user', credential: 'password' },
+		// { uri: 'turns:turn.example.net?transport=tcp', username: 'user', credential: 'password' },
 	]
 };
