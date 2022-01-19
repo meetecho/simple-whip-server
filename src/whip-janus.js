@@ -1,9 +1,9 @@
 'use strict';
 
-const { EventEmitter } = require('events');
+import { EventEmitter } from 'events';
 
-const Janode = require('janode');
-const VideoRoomPlugin = require('janode/src/plugins/videoroom-plugin');
+import Janode from 'janode';
+import VideoRoomPlugin from 'janode/plugins/videoroom';
 
 /*
  * Simple WHIP server
@@ -18,7 +18,7 @@ const VideoRoomPlugin = require('janode/src/plugins/videoroom-plugin');
 /*
  * Usage:
  *
- * const WhipJanus = require("./whip-janus.js");
+ * import WhipJanus from "./whip-janus.js";
  * const wj = new WhipJanus(config);
  * await wj.connect(config);
  *
@@ -26,7 +26,7 @@ const VideoRoomPlugin = require('janode/src/plugins/videoroom-plugin');
 
 
 // Debugging
-const debug = require('debug');
+import debug from 'debug';
 const whip = {
 	debug: debug('janus:debug'),
 	err: debug('janus:error'),
@@ -365,4 +365,4 @@ class whipJanus extends EventEmitter {
 	}
 }
 
-module.exports = whipJanus;
+export default whipJanus;

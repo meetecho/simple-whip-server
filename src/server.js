@@ -11,12 +11,18 @@
  */
 
 // Dependencies
-var async = require('async');
-var express = require('express');
-var cors = require('cors');
-var colors = require('colors/safe');
-var debug = require('debug');
-var WhipJanus = require('./whip-janus.js');
+import async from 'async';
+import express from 'express';
+import cors from 'cors';
+import bodyParser from 'body-parser';
+import colors from 'colors/safe.js';
+import debug from 'debug';
+
+import { readFileSync } from 'fs';
+import { createServer } from 'http';
+import { createServer as createSecureServer } from 'https';
+
+import WhipJanus from './whip-janus.js';
 
 // Debugging
 var whip = {
@@ -27,7 +33,7 @@ var whip = {
 };
 
 // Configuration file
-const config = require('./config.js');
+import config from './config.js';
 
 // Static properties
 var janus = null;
@@ -52,14 +58,13 @@ async.series([
 		var options = null;
 		var https = (config.https && config.https.cert && config.https.key);
 		if (https) {
-			var fs = require('fs');
 			options = {
-				cert: fs.readFileSync(config.https.cert, 'utf8'),
-				key: fs.readFileSync(config.https.key, 'utf8'),
+				cert: readFileSync(config.https.cert, 'utf8'),
+				key: readFileSync(config.https.key, 'utf8'),
 				passphrase: config.https.passphrase
 			};
 		}
-		var http = require(https ? 'https' : 'http').createServer(options, app);
+		var http = https ? createSecureServer(options, app) : createServer(options, app);
 		http.on('error', function (err) {
 			console.log('Web server error:', err);
 			if (err.code == 'EADDRINUSE') {
@@ -595,7 +600,6 @@ function setupRest(app) {
 	app.use(cors({ preflightContinue: true }));
 
 	// Initialize the REST API
-	var bodyParser = require('body-parser');
 	app.use(bodyParser.json());
 	app.use(bodyParser.text({ type: 'application/sdp' }));
 	app.use(bodyParser.text({ type: 'application/trickle-ice-sdpfrag' }));
