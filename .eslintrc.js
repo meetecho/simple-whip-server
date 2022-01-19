@@ -1,10 +1,16 @@
 module.exports = {
     'env': {
         'node': true,
-        'browser': false,
-        'es2020': true
+        'browser': true,
+        'jquery': true,
+        'es2021': true
     },
-    'extends': 'eslint:recommended',
+    'extends': [
+        'eslint:recommended'
+    ],
+    'parserOptions': {
+        'sourceType': 'module'
+    },
     'rules': {
         'no-unused-vars': [
             'warn',
