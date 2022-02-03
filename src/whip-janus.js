@@ -145,9 +145,35 @@ var whipJanus = function(janusConfig) {
 					});
 					// FIXME We should monitor it getting back or not
 				}, 15000);
-				// We're done
-				that.config.janus.state = "connected";
-				callback();
+				// Send an "info" request to check what version of Janus we're talking
+				// to, and also to make sure the VideoRoom plugin is available
+				janusSend({ janus: "info" }, function(response) {
+					if(response["janus"] === "error") {
+						whip.err("Error retrieving server info:", response["error"]["reason"]);
+						disconnect();
+						return;
+					}
+					var found = false;
+					if(response.plugins) {
+						for(var plugin in response.plugins) {
+							if(plugin === "janus.plugin.videoroom") {
+								found = true;
+								break;
+							}
+						}
+					}
+					if(!found) {
+						whip.err("VideoRoom plugin not available in configured Janus instance");
+						disconnect();
+						return;
+					}
+					that.config.janus.multistream = (response.version >= 1000);
+					whip.info("Janus instance version: " + response.version_string + " (" +
+						(that.config.janus.multistream ? "multistream" : "legacy") + ")");
+					// We're done
+					that.config.janus.state = "connected";
+					callback();
+				});
 			});
 		});
 		that.config.ws.connect(that.config.janus.ws, 'janus-protocol');
