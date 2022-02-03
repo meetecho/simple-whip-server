@@ -219,6 +219,29 @@ var whipJanus = function(janusConfig) {
 			callback({ error: "WebRTC " + uuid + " already published" });
 			return;
 		}
+		// If we're talking to multistream Janus and forwarding, extract the mids
+		if(recipient && that.config.janus.multistream && jsep.sdp) {
+			let lines = jsep.sdp.split("\r\n");
+			let type = null;
+			for(let i=0; i<lines.length; i++) {
+				const mline = lines[i].match(/m=(\w+) */);
+				if(mline) {
+					type = mline[1];
+					continue;
+				}
+				if(type !== "audio" && type !== "video")
+					continue;
+				let mid = lines[i].match('a=mid:(.+)');
+				if(mid) {
+					if(type === "audio" && !session.audioMid)
+						session.audioMid = mid[1];
+					else if(type === "video" && !session.videoMid)
+						session.videoMid = mid[1];
+					if(session.audioMid && session.audioMid)
+						break;
+				}
+			}
+		}
 		// Create a handle to attach to specified plugin
 		whip.debug("Creating handle for session " + uuid);
 		var attach = {
@@ -359,7 +382,10 @@ var whipJanus = function(janusConfig) {
 			janus: "message",
 			session_id: that.config.janus.session.id,
 			handle_id: session.handle,
-			body: {
+		};
+		if(!that.config.janus.multistream) {
+			// Use legacy syntax of rtp_forward
+			forward.body = {
 				request: "rtp_forward",
 				room: handleInfo.room,
 				publisher_id: handleInfo.publisher,
@@ -373,7 +399,34 @@ var whipJanus = function(janusConfig) {
 				video_ssrc: Math.floor(Math.random() * max32),
 				video_rtcp_port: recipient.videoRtcpPort
 			}
-		};
+		} else {
+			// Use multistream syntax of rtp_forward
+			forward.body = {
+				request: "rtp_forward",
+				room: handleInfo.room,
+				publisher_id: handleInfo.publisher,
+				secret: secret,
+				admin_key: adminKey,
+				host: recipient.host,
+				host_family: "ipv4",
+				streams: []
+			}
+			if(!isNaN(recipient.audioPort) && recipient.audioPort > 0 && session.audioMid) {
+				forward.body.streams.push({
+					mid: session.audioMid,
+					port: recipient.audioPort,
+					ssrc: Math.floor(Math.random() * max32)
+				});
+			}
+			if(!isNaN(recipient.videoPort) && recipient.videoPort > 0 && session.videoMid) {
+				forward.body.streams.push({
+					mid: session.videoMid,
+					port: recipient.videoPort,
+					ssrc: Math.floor(Math.random() * max32),
+					rtcp_port: recipient.videoRtcpPort
+				});
+			}
+		}
 		whip.debug("Sending forward request:", forward);
 		janusSend(forward, function(response) {
 			delete that.config.janus.transactions[response["transaction"]];
