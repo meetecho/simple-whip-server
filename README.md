@@ -1,7 +1,7 @@
 Simple WHIP Server
 ==================
 
-This is an attempt to create a simple prototype of a [WHIP server](https://www.ietf.org/archive/id/draft-ietf-wish-whip-01.html), using Janus as a WebRTC server backend. It's mostly meant to be used with my [Simple WHIP Client](https://github.com/lminiero/simple-whip-client) (based on [GStreamer's webrtcbin](https://gstreamer.freedesktop.org/documentation/webrtc/index.html)), as well as for interoperability testing with other WHIP implementations. As such, it's very early stages, and mostly meant as a playground for interested developers.
+This is an attempt to create a simple prototype of a [WHIP server](https://www.ietf.org/archive/id/draft-ietf-wish-whip-01.html), using Janus as a WebRTC server backend. It's mostly meant to be used with my [Simple WHIP Client](https://github.com/meetecho/simple-whip-client) (based on [GStreamer's webrtcbin](https://gstreamer.freedesktop.org/documentation/webrtc/index.html)), as well as for interoperability testing with other WHIP implementations. As such, it's very early stages, and mostly meant as a playground for interested developers.
 
 # Installation
 
@@ -53,7 +53,7 @@ If successful, a 200 OK will be returned, and the `/endpoint/<id>` endpoint will
 
 Notice that the server will not create the VideoRoom for you. In the example above, the specified room `1234` must exist already, or any attempt to publish there will fail.
 
-Publishing to the WHIP endpoint via WebRTC can be done by sending an SDP offer to the created `/endpoint/<id>` endpoint via HTTP POST, which will interact with Janus on your behalf and, if successful, return an SDP answer back in the 200 OK. If you're using my [Simple WHIP Client](https://github.com/lminiero/simple-whip-client) to test, the full HTTP path to the endpoint is all you need to provide as the WHIP url.
+Publishing to the WHIP endpoint via WebRTC can be done by sending an SDP offer to the created `/endpoint/<id>` endpoint via HTTP POST, which will interact with Janus on your behalf and, if successful, return an SDP answer back in the 200 OK. If you're using my [Simple WHIP Client](https://github.com/meetecho/simple-whip-client) to test, the full HTTP path to the endpoint is all you need to provide as the WHIP url.
 
 As per the specification, the response to the publish request will contain a `Location` header which points to the resource to use to refer to the stream. In this simple prototype, the resource is handled by the same server instance, and is currently hardcoded, for the sake of simplicity, to the `/resource/<id>` endpoint (returned as a relative path in the header). That's the address used for interacting with the session, i.e., for tricking candidates, restarting ICE, and tearing down the session. The server is configured to automatically allow trickle candidates to be sent via HTTP PATCH to the `/resource/<id>` endpoint: if you'd like the server to not allow trickle candidates instead (e.g., to test if your client handles a failure gracefully), you can disable them in the configuration file. ICE restarts are supported too. Finally, that's also the address you'll need to send the HTTP DELETE request to, in case you want to signal the intention to tear down the WebRTC PeerConnection.
 
