@@ -550,12 +550,12 @@ function setupRest(app) {
 			}
 		}
 		whip.debug("/resource/:", id);
-		// Check the latest ETag
-		if(req.headers['if-match'] !== '*' && req.headers['if-match'] !== endpoint.latestEtag) {
-			res.status(412);
-			res.send('Precondition Failed');
-			return;
-		}
+		//~ // Check the latest ETag
+		//~ if(req.headers['if-match'] !== '*' && req.headers['if-match'] !== endpoint.latestEtag) {
+			//~ res.status(412);
+			//~ res.send('Precondition Failed');
+			//~ return;
+		//~ }
 		// Get rid of the Janus publisher
 		if(janus)
 			janus.removeSession({ uuid: endpoint.publisher });
