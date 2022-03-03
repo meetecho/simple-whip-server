@@ -113,6 +113,7 @@ function setupJanus(callback) {
 				delete endpoint.sdpOffer;
 				delete endpoint.ice;
 				delete endpoint.resource;
+				delete endpoint.latestEtag;
 				whip.info('[' + id + '] Terminating WHIP session');
 			}
 			whip.warn("Lost connectivity to Janus, reset the manager and try reconnecting");
@@ -304,6 +305,7 @@ function setupRest(app) {
 					delete endpoint.sdpOffer;
 					delete endpoint.ice;
 					delete endpoint.resource;
+					delete endpoint.latestEtag;
 				}
 			}
 		});
@@ -343,9 +345,11 @@ function setupRest(app) {
 			} else {
 				whip.info('[' + id + '] Publishing to WHIP endpoint');
 				endpoint.resource = config.rest + '/resource/' + id;
+				endpoint.latestEtag = janus.generateRandomString(16);
 				// Done
 				res.setHeader('Access-Control-Expose-Headers', 'Location, Link');
 				res.setHeader('Location', endpoint.resource);
+				res.set('ETag', '"' + endpoint.latestEtag + '"');
 				var iceServers = endpoint.iceServers ? endpoint.iceServers : config.iceServers;
 				if(iceServers && iceServers.length > 0) {
 					// Add a Link header for each static ICE server
@@ -387,6 +391,8 @@ function setupRest(app) {
 	router.patch('/resource/:id', function(req, res) {
 		var id = req.params.id;
 		var endpoint = endpoints[id];
+		if(endpoint && endpoint.latestEtag)
+			res.set('ETag', '"' + endpoint.latestEtag + '"');
 		if(!id || !endpoint) {
 			res.status(404);
 			res.send('Invalid endpoint ID');
@@ -412,6 +418,12 @@ function setupRest(app) {
 		if(!endpoint.enabled) {
 			res.status(403);
 			res.send('Endpoint ID not published');
+			return;
+		}
+		// Check the latest ETag
+		if(req.headers['if-match'] !== '"*"' && req.headers['if-match'] !== ('"' + endpoint.latestEtag + '"')) {
+			res.status(412);
+			res.send('Precondition Failed');
 			return;
 		}
 		// Make sure Janus is up and running
@@ -452,6 +464,12 @@ function setupRest(app) {
 			// We need to restart
 			restart = true;
 		}
+		// Do one more ETag check (make sure restarts have '*' as ETag, and only them)
+		if((req.headers['if-match'] === '*' && !restart) || (req.headers['if-match'] !== '"*"' && restart)) {
+			res.status(412);
+			res.send('Precondition Failed');
+			return;
+		}
 		if(!restart) {
 			// Trickle the candidate(s)
 			if(candidates.length > 0)
@@ -471,6 +489,9 @@ function setupRest(app) {
 			.replace(new RegExp(oldPwd, 'g'), newPwd);
 		endpoint.ice.ufrag = iceUfrag;
 		endpoint.ice.pwd = icePwd;
+		// Generate a new ETag too
+		endpoint.latestEtag = janus.generateRandomString(16);
+		whip.warn('New ETag: ' + endpoint.latestEtag);
 		// Send the new offer
 		var details = {
 			uuid: endpoint.publisher,
@@ -496,6 +517,7 @@ function setupRest(app) {
 				var payload =
 					'a=ice-ufrag:' + serverUfrag + '\r\n' +
 					'a=ice-pwd:' + serverPwd + '\r\n';
+				res.set('ETag', '"' + endpoint.latestEtag + '"');
 				res.writeHeader(200, { 'Content-Type': 'application/trickle-ice-sdpfrag' });
 				res.write(payload);
 				res.end();
@@ -528,6 +550,12 @@ function setupRest(app) {
 			}
 		}
 		whip.debug("/resource/:", id);
+		// Check the latest ETag
+		if(req.headers['if-match'] !== '*' && req.headers['if-match'] !== endpoint.latestEtag) {
+			res.status(412);
+			res.send('Precondition Failed');
+			return;
+		}
 		// Get rid of the Janus publisher
 		if(janus)
 			janus.removeSession({ uuid: endpoint.publisher });
@@ -536,6 +564,7 @@ function setupRest(app) {
 		delete endpoint.sdpOffer;
 		delete endpoint.ice;
 		delete endpoint.resource;
+		delete endpoint.latestEtag;
 		whip.info('[' + id + '] Terminating WHIP session');
 		// Done
 		res.sendStatus(200);
