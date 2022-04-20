@@ -603,7 +603,7 @@ var whipJanus = function(janusConfig) {
 	// Private method to send requests to Janus
 	function janusSend(message, responseCallback) {
 		if(that.config.ws && that.config.ws.connection) {
-			var transaction = randomString(16);
+			var transaction = that.generateRandomString(16);
 			if(responseCallback)
 				that.config.janus.transactions[transaction] = responseCallback;
 			message["transaction"] = transaction;
@@ -614,8 +614,8 @@ var whipJanus = function(janusConfig) {
 		}
 	}
 
-	// Private method to create random identifiers (e.g., transaction)
-	function randomString(len) {
+	// Helper method to create random identifiers (e.g., transaction)
+	this.generateRandomString = function(len) {
 		var charSet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
 		var randomString = '';
 		for (var i = 0; i < len; i++) {
