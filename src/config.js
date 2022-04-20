@@ -25,6 +25,10 @@ module.exports = {
 	// we'll send back an HTTP 405 error as per the specification
 	allowTrickle: true,
 
+	// Whether we should be strict about ETags (as per the specification),
+	// or whether we'll just generate them and accept whatever we get
+	strictETags: false,
+
 	// In case we need to always return a set of STUN/TURN servers to
 	// WHIP clients via a Link header (unless some servers have been provided
 	// as part of the endpoint creation request), we can put them here

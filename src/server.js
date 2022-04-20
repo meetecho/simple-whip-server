@@ -422,9 +422,12 @@ function setupRest(app) {
 		}
 		// Check the latest ETag
 		if(req.headers['if-match'] !== '"*"' && req.headers['if-match'] !== ('"' + endpoint.latestEtag + '"')) {
-			res.status(412);
-			res.send('Precondition Failed');
-			return;
+			if(config.strictETags) {
+				// Only return a failure if we're configured with strict ETag checking, ignore it otherwise
+				res.status(412);
+				res.send('Precondition Failed');
+				return;
+			}
 		}
 		// Make sure Janus is up and running
 		if(!janus || !janus.isReady() || janus.getState() !== "connected") {
@@ -466,9 +469,12 @@ function setupRest(app) {
 		}
 		// Do one more ETag check (make sure restarts have '*' as ETag, and only them)
 		if((req.headers['if-match'] === '*' && !restart) || (req.headers['if-match'] !== '"*"' && restart)) {
-			res.status(412);
-			res.send('Precondition Failed');
-			return;
+			if(config.strictETags) {
+				// Only return a failure if we're configured with strict ETag checking, ignore it otherwise
+				res.status(412);
+				res.send('Precondition Failed');
+				return;
+			}
 		}
 		if(!restart) {
 			// Trickle the candidate(s)
