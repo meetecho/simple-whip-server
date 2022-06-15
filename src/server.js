@@ -232,7 +232,7 @@ function setupRest(app) {
 						server.uri.indexOf('turn:') !== 0 &&
 						server.uri.indexOf('turns:') !== 0))
 					continue;
-				var link = server.uri + '; rel="ice-server";';
+				var link = '<' + server.uri + '>; rel="ice-server";';
 				if(server.username && server.credential) {
 					link += ' username="' + server.username + '";' +
 						' credential="' + server.credential + '";' +
@@ -359,7 +359,7 @@ function setupRest(app) {
 								server.uri.indexOf('turn:') !== 0 &&
 								server.uri.indexOf('turns:') !== 0))
 							continue;
-						var link = server.uri + '; rel="ice-server";';
+						var link = '<' + server.uri + '>; rel="ice-server";';
 						if(server.username && server.credential) {
 							link += ' username="' + server.username + '";' +
 								' credential="' + server.credential + '";' +
