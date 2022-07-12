@@ -103,7 +103,7 @@ function addOrUpdateEndpoint(endpoint) {
 						if(result) {
 							// Send the DELETE to the endpoint
 							$.ajax({
-								url: endpoint.resource,
+								url: rest + '/resource/' + id,,
 								beforeSend: function(xhr) {
 									if(endpoint.token)
 										xhr.setRequestHeader('Authorization', 'Bearer ' + endpoint.token);
