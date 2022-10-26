@@ -226,6 +226,8 @@ function setupRest(app) {
 		if(iceServers && iceServers.length > 0) {
 			// Add a Link header for each static ICE server
 			res.setHeader('Access-Control-Expose-Headers', 'Link');
+			res.setHeader('Access-Post', 'application/sdp');
+			res.setHeader('Accept-Patch', 'application/trickle-ice-sdpfrag');
 			var links = [];
 			for(var server of iceServers) {
 				if(!server.uri || (server.uri.indexOf('stun:') !== 0 &&
