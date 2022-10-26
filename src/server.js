@@ -227,7 +227,6 @@ function setupRest(app) {
 			// Add a Link header for each static ICE server
 			res.setHeader('Access-Control-Expose-Headers', 'Link');
 			res.setHeader('Access-Post', 'application/sdp');
-			res.setHeader('Accept-Patch', 'application/trickle-ice-sdpfrag');
 			var links = [];
 			for(var server of iceServers) {
 				if(!server.uri || (server.uri.indexOf('stun:') !== 0 &&
@@ -351,6 +350,7 @@ function setupRest(app) {
 				endpoint.latestEtag = janus.generateRandomString(16);
 				// Done
 				res.setHeader('Access-Control-Expose-Headers', 'Location, Link');
+				res.setHeader('Accept-Patch', 'application/trickle-ice-sdpfrag');
 				res.setHeader('Location', endpoint.resource);
 				res.set('ETag', '"' + endpoint.latestEtag + '"');
 				var iceServers = endpoint.iceServers ? endpoint.iceServers : config.iceServers;
