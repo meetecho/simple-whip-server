@@ -237,7 +237,7 @@ var whipJanus = function(janusConfig) {
 						session.audioMid = mid[1];
 					else if(type === "video" && !session.videoMid)
 						session.videoMid = mid[1];
-					if(session.audioMid && session.audioMid)
+					if(session.audioMid && session.videoMid)
 						break;
 				}
 			}
