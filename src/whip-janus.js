@@ -35,7 +35,7 @@ var whip = {
 
 var whipJanus = function(janusConfig) {
 
-	var that = this;
+	let that = this;
 
 	// We use this method to register callbacks
 	this.callbacks = {};
@@ -56,8 +56,8 @@ var whipJanus = function(janusConfig) {
 	that.config.janus.state = "disconnected";
 	that.config.janus.transactions = {};
 	// Tables
-	var sessions = {};		// Not to be confused with Janus sessions
-	var handles = {};		// All Janus handles (map to local sessions here)
+	let sessions = {};		// Not to be confused with Janus sessions
+	let handles = {};		// All Janus handles (map to local sessions here)
 
 	// Public method to check when the class object is ready
 	this.isReady = function() { return that.config.janus.session && that.config.janus.session.id !== 0; };
@@ -68,7 +68,7 @@ var whipJanus = function(janusConfig) {
 		whip.info("Connecting to " + that.config.janus.ws);
 		// Callbacks
 		callback = (typeof callback == "function") ? callback : noop;
-		var disconnectedCB = (typeof that.callbacks["disconnected"] == "function") ? that.callbacks["disconnected"] : noop;
+		let disconnectedCB = (typeof that.callbacks["disconnected"] == "function") ? that.callbacks["disconnected"] : noop;
 		// Connect to Janus via WebSockets
 		if(that.config.janus.state !== "disconnected" || that.config.ws) {
 			whip.warn("Already connected/connecting");
@@ -99,12 +99,12 @@ var whipJanus = function(janusConfig) {
 			});
 			connection.on('message', function(message) {
 				if(message.type === 'utf8') {
-					var json = JSON.parse(message.utf8Data);
+					let json = JSON.parse(message.utf8Data);
 					whip.vdebug("Received message:", json);
-					var event = json["janus"];
-					var transaction = json["transaction"];
+					let event = json["janus"];
+					let transaction = json["transaction"];
 					if(transaction) {
-						var reportResult = that.config.janus.transactions[transaction];
+						let reportResult = that.config.janus.transactions[transaction];
 						if(reportResult) {
 							reportResult(json);
 						}
@@ -112,10 +112,10 @@ var whipJanus = function(janusConfig) {
 					}
 					if(event === 'hangup') {
 						// Janus told us this PeerConnection is gone
-						var sender = json["sender"];
-						var handle = handles[sender];
+						let sender = json["sender"];
+						let handle = handles[sender];
 						if(handle) {
-							var session = sessions[handle.uuid];
+							let session = sessions[handle.uuid];
 							if(session && session.whipId && session.teardown && (typeof session.teardown === "function")) {
 								// Notify the application layer
 								session.teardown(session.whipId);
@@ -153,9 +153,9 @@ var whipJanus = function(janusConfig) {
 						disconnect();
 						return;
 					}
-					var found = false;
+					let found = false;
 					if(response.plugins) {
-						for(var plugin in response.plugins) {
+						for(let plugin in response.plugins) {
 							if(plugin === "janus.plugin.videoroom") {
 								found = true;
 								break;
@@ -190,7 +190,7 @@ var whipJanus = function(janusConfig) {
 	};
 	this.removeSession = function(details) {
 		whip.debug("Removing user:", details);
-		var uuid = details.uuid;
+		let uuid = details.uuid;
 		this.hangup({ uuid: uuid });
 		delete sessions[uuid];
 	};
@@ -203,14 +203,14 @@ var whipJanus = function(janusConfig) {
 			callback({ error: "Missing mandatory attribute(s)" });
 			return;
 		}
-		var jsep = details.jsep;
-		var room = details.room;
-		var pin = details.pin;
-		var secret = details.secret;
-		var adminKey = details.adminKey;
-		var recipient = details.recipient;
-		var uuid = details.uuid;
-		var session = sessions[uuid];
+		let jsep = details.jsep;
+		let room = details.room;
+		let pin = details.pin;
+		let secret = details.secret;
+		let adminKey = details.adminKey;
+		let recipient = details.recipient;
+		let uuid = details.uuid;
+		let session = sessions[uuid];
 		if(!session) {
 			callback({ error: "No such session" });
 			return;
@@ -244,7 +244,7 @@ var whipJanus = function(janusConfig) {
 		}
 		// Create a handle to attach to specified plugin
 		whip.debug("Creating handle for session " + uuid);
-		var attach = {
+		let attach = {
 			janus: "attach",
 			session_id: that.config.janus.session.id,
 			plugin: "janus.plugin.videoroom"
@@ -253,21 +253,21 @@ var whipJanus = function(janusConfig) {
 			whip.debug("Attach response:", response);
 			// Unsubscribe from the transaction
 			delete that.config.janus.transactions[response["transaction"]];
-			var event = response["janus"];
+			let event = response["janus"];
 			if(event === "error") {
 				whip.err("Got an error attaching to the plugin:", response["error"].reason);
 				callback({ error: response["error"].reason });
 				return;
 			}
 			// Take note of the handle ID
-			var handle = response["data"]["id"];
+			let handle = response["data"]["id"];
 			whip.debug("Plugin handle for session " + session + " is " + handle);
 			session.handle = handle;
 			handles[handle] = { uuid: uuid, room: room };
 			// Do we have pending trickles?
 			if(session.candidates && session.candidates.length > 0) {
 				// Send a trickle candidates bunch request
-				var candidates = {
+				let candidates = {
 					janus: "trickle",
 					session_id: that.config.janus.session.id,
 					handle_id: handle,
@@ -280,7 +280,7 @@ var whipJanus = function(janusConfig) {
 				session.candidates = [];
 			}
 			// Send a request to the plugin to publish
-			var publish = {
+			let publish = {
 				janus: "message",
 				session_id: that.config.janus.session.id,
 				handle_id: handle,
@@ -296,7 +296,7 @@ var whipJanus = function(janusConfig) {
 				jsep: jsep
 			};
 			janusSend(publish, function(response) {
-				var event = response["janus"];
+				let event = response["janus"];
 				if(event === "error") {
 					delete that.config.janus.transactions[response["transaction"]];
 					whip.err("Got an error publishing:", response["error"].reason);
@@ -308,7 +308,7 @@ var whipJanus = function(janusConfig) {
 					return;
 				}
 				// Get the plugin data: is this a success or an error?
-				var data = response.plugindata.data;
+				let data = response.plugindata.data;
 				if(data.error) {
 					// Unsubscribe from the transaction
 					delete that.config.janus.transactions[response["transaction"]];
@@ -329,7 +329,7 @@ var whipJanus = function(janusConfig) {
 					// Should we RTP forward too?
 					if(recipient && recipient.host && (recipient.audioPort > 0 || recipient.videoPort > 0)) {
 						// RTP forward the publisher to the specified address
-						var forwardDetails = {
+						let forwardDetails = {
 							uuid: uuid,
 							secret: secret,			// RTP forwarding may need the room secret
 							adminKey: adminKey,		// RTP forwarding may need the plugin Admin Key
@@ -343,13 +343,13 @@ var whipJanus = function(janusConfig) {
 								return;
 							}
 							// Notify the response
-							var jsep = response["jsep"];
+							let jsep = response["jsep"];
 							callback(null, { jsep: jsep });
 						});
 						return;
 					}
 					// Notify the response
-					var jsep = response["jsep"];
+					let jsep = response["jsep"];
 					callback(null, { jsep: jsep });
 				}
 			});
@@ -362,11 +362,11 @@ var whipJanus = function(janusConfig) {
 			callback({ error: "Missing mandatory attribute(s)" });
 			return;
 		}
-		var secret = details.secret;
-		var adminKey = details.adminKey;
-		var recipient = details.recipient;
-		var uuid = details.uuid;
-		var session = sessions[uuid];
+		let secret = details.secret;
+		let adminKey = details.adminKey;
+		let recipient = details.recipient;
+		let uuid = details.uuid;
+		let session = sessions[uuid];
 		if(!session) {
 			callback({ error: "No such session" });
 			return;
@@ -375,10 +375,10 @@ var whipJanus = function(janusConfig) {
 			callback({ error: "WebRTC session not established for " + uuid });
 			return;
 		}
-		var handleInfo = handles[session.handle];
+		let handleInfo = handles[session.handle];
 		// Now send the RTP forward request
-		var max32 = Math.pow(2, 32) - 1;
-		var forward = {
+		let max32 = Math.pow(2, 32) - 1;
+		let forward = {
 			janus: "message",
 			session_id: that.config.janus.session.id,
 			handle_id: session.handle,
@@ -430,14 +430,14 @@ var whipJanus = function(janusConfig) {
 		whip.debug("Sending forward request:", forward);
 		janusSend(forward, function(response) {
 			delete that.config.janus.transactions[response["transaction"]];
-			var event = response["janus"];
+			let event = response["janus"];
 			if(event === "error") {
 				whip.err("Got an error forwarding:", response["error"].reason);
 				callback({ error: response["error"].reason });
 				return;
 			}
 			// Get the plugin data: is this a success or an error?
-			var data = response.plugindata.data;
+			let data = response.plugindata.data;
 			if(data.error) {
 				whip.err("Got an error forwarding:", data.error);
 				callback({ error: data.error });
@@ -454,9 +454,9 @@ var whipJanus = function(janusConfig) {
 			callback({ error: "Missing mandatory attribute(s)" });
 			return;
 		}
-		var candidate = details.candidate;
-		var uuid = details.uuid;
-		var session = sessions[uuid];
+		let candidate = details.candidate;
+		let uuid = details.uuid;
+		let session = sessions[uuid];
 		if(!session) {
 			callback({ error: "No such session" });
 			return;
@@ -469,7 +469,7 @@ var whipJanus = function(janusConfig) {
 			return;
 		}
 		// Send a trickle request
-		var trickle = {
+		let trickle = {
 			janus: "trickle",
 			session_id: that.config.janus.session.id,
 			handle_id: session.handle,
@@ -487,15 +487,15 @@ var whipJanus = function(janusConfig) {
 			callback({ error: "Missing mandatory attribute(s)" });
 			return;
 		}
-		var jsep = details.jsep;
-		var uuid = details.uuid;
-		var session = sessions[uuid];
+		let jsep = details.jsep;
+		let uuid = details.uuid;
+		let session = sessions[uuid];
 		if(!session || !session.handle) {
 			callback({ error: "No such session" });
 			return;
 		}
 		// Send a request to the plugin with the new SDP to restart
-		var restart = {
+		let restart = {
 			janus: "message",
 			session_id: that.config.janus.session.id,
 			handle_id: session.handle,
@@ -505,7 +505,7 @@ var whipJanus = function(janusConfig) {
 			jsep: jsep
 		};
 		janusSend(restart, function(response) {
-			var event = response["janus"];
+			let event = response["janus"];
 			if(event === "error") {
 				delete that.config.janus.transactions[response["transaction"]];
 				whip.err("Got an error restarting:", response["error"].reason);
@@ -517,7 +517,7 @@ var whipJanus = function(janusConfig) {
 				return;
 			}
 			// Get the plugin data: is this a success or an error?
-			var data = response.plugindata.data;
+			let data = response.plugindata.data;
 			if(data.error) {
 				// Unsubscribe from the transaction
 				delete that.config.janus.transactions[response["transaction"]];
@@ -535,7 +535,7 @@ var whipJanus = function(janusConfig) {
 				// Unsubscribe from the transaction
 				delete that.config.janus.transactions[response["transaction"]];
 				// Notify the response
-				var jsep = response["jsep"];
+				let jsep = response["jsep"];
 				callback(null, { jsep: jsep });
 			}
 		});
@@ -547,8 +547,8 @@ var whipJanus = function(janusConfig) {
 			callback({ error: "Missing mandatory attribute(s)" });
 			return;
 		}
-		var uuid = details.uuid;
-		var session = sessions[uuid];
+		let uuid = details.uuid;
+		let session = sessions[uuid];
 		if(!session) {
 			callback({ error: "No such session" });
 			return;
@@ -558,11 +558,11 @@ var whipJanus = function(janusConfig) {
 			return;
 		}
 		// Get rid of the handle now
-		var handle = session.handle;
+		let handle = session.handle;
 		delete handles[handle];
 		session.handle = 0;
 		// We hangup sending a detach request
-		var hangup = {
+		let hangup = {
 			janus: "detach",
 			session_id: that.config.janus.session.id,
 			handle_id: handle
@@ -603,7 +603,7 @@ var whipJanus = function(janusConfig) {
 	// Private method to send requests to Janus
 	function janusSend(message, responseCallback) {
 		if(that.config.ws && that.config.ws.connection) {
-			var transaction = that.generateRandomString(16);
+			let transaction = that.generateRandomString(16);
 			if(responseCallback)
 				that.config.janus.transactions[transaction] = responseCallback;
 			message["transaction"] = transaction;
@@ -616,10 +616,10 @@ var whipJanus = function(janusConfig) {
 
 	// Helper method to create random identifiers (e.g., transaction)
 	this.generateRandomString = function(len) {
-		var charSet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
-		var randomString = '';
-		for (var i = 0; i < len; i++) {
-			var randomPoz = Math.floor(Math.random() * charSet.length);
+		let charSet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+		let randomString = '';
+		for(let i=0; i<len; i++) {
+			let randomPoz = Math.floor(Math.random() * charSet.length);
 			randomString += charSet.substring(randomPoz,randomPoz+1);
 		}
 		return randomString;
