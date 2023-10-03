@@ -19,14 +19,14 @@ function getEndpoints() {
 			setTimeout(getEndpoints, 5000);
 		});
 	}).done(function(response) {
-		var ids = {};
-		for(var id in endpoints)
+		let ids = {};
+		for(let id in endpoints)
 			ids[id] = true;
-		for(var endpoint of response) {
+		for(let endpoint of response) {
 			delete ids[endpoint.id];
 			addOrUpdateEndpoint(endpoint);
 		}
-		for(var id in ids) {
+		for(let id in ids) {
 			toastr.info('Endpoint <' + id + '> destroyed');
 			$('#endpoint-' + id).remove();
 			delete endpoints[id];
@@ -39,8 +39,8 @@ function getEndpoints() {
 function addOrUpdateEndpoint(endpoint) {
 	if(!endpoint)
 		return;
-	var newEndpoint = false;
-	var prevEndpoint = endpoints[endpoint.id];
+	let newEndpoint = false;
+	let prevEndpoint = endpoints[endpoint.id];
 	if(!prevEndpoint) {
 		// New endpoint, add the details to the UI
 		newEndpoint = true;
@@ -58,11 +58,11 @@ function addOrUpdateEndpoint(endpoint) {
 			'</tr>'
 		);
 		$('#destroy-' + endpoint.id).click(function() {
-			var id = $(this).attr('id').split('destroy-')[1];
+			let id = $(this).attr('id').split('destroy-')[1];
 			bootbox.confirm('Permanently destroy endpoint &lt;' + id + '&gt;?', function(result) {
 				if(result) {
 					// Send the DELETE to the endpoint
-					var endpoint = endpoints[id];
+					let endpoint = endpoints[id];
 					if(!endpoint)
 						return;
 					$.ajax({
@@ -94,7 +94,7 @@ function addOrUpdateEndpoint(endpoint) {
 				.removeClass('hide')
 				.unbind('click')
 				.click(function() {
-					var id = $(this).attr('id').split('teardown-')[1];
+					let id = $(this).attr('id').split('teardown-')[1];
 					if(!endpoint.resource) {
 						toastr.warning('Missing resource url for endpoint &lt;' + id + '&gt;');
 						return;
@@ -139,7 +139,7 @@ function addOrUpdateEndpoint(endpoint) {
 
 // Helper method to create a new endpoint
 function createEndpoint() {
-	var content =
+	let content =
 		'<form class="form-horizontal">' +
 		'	<div class="form-group">' +
 		'		<label for="id" class="col-sm-3 control-label">ID</label>' +
@@ -186,11 +186,11 @@ function createEndpoint() {
 				label: 'OK',
 				className: 'btn-primary',
 				callback: function() {
-					var id = $('#id').val();
-					var room = $('#room').val();
-					var pin = $('#pin').val();
-					var display = $('#display').val();
-					var token = $('#token').val();
+					let id = $('#id').val();
+					let room = $('#room').val();
+					let pin = $('#pin').val();
+					let display = $('#display').val();
+					let token = $('#token').val();
 					if(!id || id === '' || !room || room === '') {
 						bootbox.alert('Missing required arguments');
 						return;
@@ -200,13 +200,13 @@ function createEndpoint() {
 						return;
 					}
 					// Note: we're assuming the Janus VideoRoom ID is numeric
-					var roomNum = parseInt(room);
+					let roomNum = parseInt(room);
 					if(isNaN(roomNum)) {
 						bootbox.alert('VideoRoom ID is not numeric');
 						return;
 					}
 					// Send the request to create the endpoint
-					var create = { id: id, room: roomNum };
+					let create = { id: id, room: roomNum };
 					if(pin && pin !== '')
 						create.pin = pin;
 					if(display && display !== '')
@@ -232,7 +232,7 @@ function createEndpoint() {
 
 // Helper to intercept enter on field
 function checkEnter(field, event) {
-	var theCode = event.keyCode ? event.keyCode : event.which ? event.which : event.charCode;
+	let theCode = event.keyCode ? event.keyCode : event.which ? event.which : event.charCode;
 	if(theCode == 13) {
 		return false;
 	} else {
