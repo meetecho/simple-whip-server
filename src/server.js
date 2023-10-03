@@ -158,6 +158,8 @@ function setupRest(app) {
 				room: endpoint.room,
 				label: endpoint.label
 			};
+			if(endpoint.enabled)
+				le.enabled = true;
 			if(endpoint.iceServers)
 				le.iceServers = true;
 			if(endpoint.token)

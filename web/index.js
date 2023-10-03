@@ -95,7 +95,8 @@ function addOrUpdateEndpoint(endpoint) {
 				.unbind('click')
 				.click(function() {
 					let id = $(this).attr('id').split('teardown-')[1];
-					if(!endpoint.resource) {
+					let endpoint = endpoints[id];
+					if(!endpoint || !endpoint.resource) {
 						toastr.warning('Missing resource url for endpoint &lt;' + id + '&gt;');
 						return;
 					}
@@ -103,7 +104,7 @@ function addOrUpdateEndpoint(endpoint) {
 						if(result) {
 							// Send the DELETE to the endpoint
 							$.ajax({
-								url: rest + '/resource/' + id,
+								url: endpoint.resource,
 								beforeSend: function(xhr) {
 									if(endpoint.token)
 										xhr.setRequestHeader('Authorization', 'Bearer ' + endpoint.token);
