@@ -313,12 +313,11 @@ function setupRest(app) {
 			res.send('Janus unavailable');
 			return;
 		}
-		let uuid = endpoint.label;
+		let uuid = id;
 		// Create a new session
 		janus.removeSession({ uuid: uuid });
 		janus.addSession({
 			uuid: uuid,
-			whipId: id,
 			teardown: function(whipId) {
 				// Janus notified us the session is gone, tear it down
 				let endpoint = endpoints[whipId];
@@ -342,6 +341,7 @@ function setupRest(app) {
 		let details = {
 			uuid: uuid,
 			room: endpoint.room,
+			label: endpoint.label,
 			pin: endpoint.pin,
 			jsep: {
 				type: 'offer',

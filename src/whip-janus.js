@@ -116,9 +116,9 @@ var whipJanus = function(janusConfig) {
 						let handle = handles[sender];
 						if(handle) {
 							let session = sessions[handle.uuid];
-							if(session && session.whipId && session.teardown && (typeof session.teardown === "function")) {
+							if(session && session.uuid && session.teardown && (typeof session.teardown === "function")) {
 								// Notify the application layer
-								session.teardown(session.whipId);
+								session.teardown(session.uuid);
 							}
 						}
 					}
@@ -184,7 +184,6 @@ var whipJanus = function(janusConfig) {
 		whip.debug("Adding session:", details);
 		sessions[details.uuid] = {
 			uuid: details.uuid,
-			whipId: details.whipId,
 			teardown: details.teardown
 		};
 	};
@@ -210,6 +209,7 @@ var whipJanus = function(janusConfig) {
 		let adminKey = details.adminKey;
 		let recipient = details.recipient;
 		let uuid = details.uuid;
+		let label = details.label;
 		let session = sessions[uuid];
 		if(!session) {
 			callback({ error: "No such session" });
@@ -289,7 +289,7 @@ var whipJanus = function(janusConfig) {
 					room: room,
 					pin: pin,
 					ptype: "publisher",
-					display: uuid,
+					display: label,
 					audio: true,
 					video: true
 				},
