@@ -40,5 +40,5 @@ module.exports = {
 	],
 
 	// Load a list of predefined endpoints
-	loadEndpointsFromFile: 'samples/sample-endpoints.json'
+	// loadEndpointsFromFile: 'samples/sample-endpoints.json'
 };
