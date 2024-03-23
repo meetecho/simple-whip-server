@@ -37,5 +37,8 @@ module.exports = {
 		//~ { uri: 'turn:turn.example.net?transport=udp', username: 'user', credential: 'password' },
 		//~ { uri: 'turn:turn.example.net?transport=tcp', username: 'user', credential: 'password' },
 		//~ { uri: 'turns:turn.example.net?transport=tcp', username: 'user', credential: 'password' },
-	]
+	],
+
+	// Load a list of predefined endpoints
+	loadEndpointsFromFile: 'samples/sample-endpoints.json'
 };
