@@ -34,6 +34,41 @@ const config = require('./config.js');
 var janus = null;
 var endpoints = {}, resources = {};
 
+function loadEndpointsFromFile(filePath) {
+	try {
+	  // Read the JSON file content
+	  const jsonData = require('fs').readFileSync(filePath, 'utf8');
+	  // Parse the JSON data
+	  const loadedEndpoints = JSON.parse(jsonData);
+	  // Process each loaded endpoint and enforce structure
+	  endpoints = {};
+	  for (const key in loadedEndpoints) {
+		const loadedEndpoint = loadedEndpoints[key];
+		endpoints[key] = {
+		  id: loadedEndpoint.id || key, // Use key as id if missing
+		  room: loadedEndpoint.room,
+		  secret: loadedEndpoint.secret,
+		  adminKey: loadedEndpoint.adminKey,
+		  pin: loadedEndpoint.pin,
+		  label: loadedEndpoint.label || `WHIP Publisher ${loadedEndpoint.room || key}`, // Use room or key for label if missing
+		  token: loadedEndpoint.token,
+		  iceServers: loadedEndpoint.iceServers,
+		  recipient: loadedEndpoint.recipient,
+		  enabled: loadedEndpoint.enabled !== undefined ? loadedEndpoint.enabled : false, // Set default enabled if missing
+		};
+	  }
+	  console.info('Loaded endpoints from file:', filePath);
+	} catch (error) {
+	  console.error('Failed to load endpoints from file:', filePath, error);
+	  // Handle loading errors gracefully (e.g., set default endpoints)
+	}
+  }
+
+if(config.loadEndpointsFromFile) {
+  // If set, load endpoints from a the given JSON file path
+  loadEndpointsFromFile(config.loadEndpointsFromFile);
+}
+
 // Startup
 async.series([
 	// 1. Connect to Janus
