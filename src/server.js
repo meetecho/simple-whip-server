@@ -445,6 +445,8 @@ function setupRest(app) {
                     }
                     res.setHeader('Link', links);
                 }
+                console.log('Final SDP answer:', result.jsep.sdp);
+
                 res.writeHeader(201, { 'Content-Type': 'application/sdp' });
                 res.write(result.jsep.sdp);
                 res.end();
