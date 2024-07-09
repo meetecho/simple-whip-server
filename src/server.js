@@ -398,7 +398,7 @@ function setupRest(app) {
         };
         // Modify the SDP based on the format
         details.jsep = modifySDPForMultichannel(details.jsep, format);
-        whip.debug('Modified SDP:', details.jsep.sdp);
+        console.log('Modified SDP:', details.jsep.sdp);
 
         // Publish
         janus.publish(details, function (err, result) {
