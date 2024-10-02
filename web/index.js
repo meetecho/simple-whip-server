@@ -201,11 +201,13 @@ function createEndpoint() {
 						return;
 					}
 					// Note: we're assuming the Janus VideoRoom ID is numeric
+					/*
 					let roomNum = parseInt(room);
 					if(isNaN(roomNum)) {
 						bootbox.alert('VideoRoom ID is not numeric');
 						return;
 					}
+					*/
 					// Send the request to create the endpoint
 					let create = { id: id, room: roomNum };
 					if(pin && pin !== '')
