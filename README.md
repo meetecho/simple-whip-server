@@ -1,7 +1,7 @@
 Simple WHIP Server
 ==================
 
-This is prototype implementation of a [WHIP server](https://www.ietf.org/archive/id/draft-ietf-wish-whip-01.html), developed by [Meetecho](https://www.meetecho.com), using the [Janus WebRTC Server](https://github.com/meetecho/janus-gateway/) as a WebRTC server backend. While it was initially conceived to be used mostly for testing with [Simple WHIP Client](https://github.com/meetecho/simple-whip-client) (based on [GStreamer's webrtcbin](https://gstreamer.freedesktop.org/documentation/webrtc/index.html)), as a standard WHIP implementation it's supposed to interoperate just as well with other WHIP implementations (check [this presentation](https://github.com/IETF-Hackathon/ietf112-project-presentations/blob/main/ietf112-hackathon-whip.pdf) for some interoperability considerations).
+This is prototype implementation of a [WHIP server](https://www.rfc-editor.org/rfc/rfc9725.html), developed by [Meetecho](https://www.meetecho.com), using the [Janus WebRTC Server](https://github.com/meetecho/janus-gateway/) as a WebRTC server backend. While it was initially conceived to be used mostly for testing with [Simple WHIP Client](https://github.com/meetecho/simple-whip-client) (based on [GStreamer's webrtcbin](https://gstreamer.freedesktop.org/documentation/webrtc/index.html)), as a standard WHIP implementation it's supposed to interoperate just as well with other WHIP implementations (check [this presentation](https://github.com/IETF-Hackathon/ietf112-project-presentations/blob/main/ietf112-hackathon-whip.pdf) for some interoperability considerations).
 
 # Installation
 
