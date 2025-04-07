@@ -572,7 +572,7 @@ function setupRest(app) {
 			return;
 		}
 		let endpoint = endpoints[id];
-		if(!endpoint || !endpoint.handle) {
+		if(!endpoint) {
 			res.status(404);
 			res.send('Invalid endpoint ID');
 			return;
@@ -594,11 +594,8 @@ function setupRest(app) {
 		}
 		whip.debug('/resource/:', id);
 		// Get rid of the Janus publisher
-		if(janus) {
-			try {
-				await endpoint.handle.detach();
-			} catch(err) {};
-		}
+		if(janus && endpoing.handle)
+			await endpoint.handle.detach().catch(err => {});
 		endpoint.enabled = false;
 		endpoint.enabling = false;
 		delete endpoint.handle;
