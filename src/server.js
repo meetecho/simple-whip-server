@@ -594,7 +594,7 @@ function setupRest(app) {
 		}
 		whip.debug('/resource/:', id);
 		// Get rid of the Janus publisher
-		if(janus && endpoing.handle)
+		if(janus && endpoint.handle)
 			await endpoint.handle.detach().catch(err => {});
 		endpoint.enabled = false;
 		endpoint.enabling = false;
