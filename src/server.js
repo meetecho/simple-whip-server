@@ -44,7 +44,6 @@ var max32 = Math.pow(2, 32) - 1;
 		// 1. Connect to Janus
 		console.log(colors.yellow('[1. Janus]'));
 		let level = process.env.JDEBUG;
-		console.log(level);
 		if(!level)
 			level = 'warn';
 		Janode.Logger.setLevel(level);
@@ -84,7 +83,8 @@ async function connectToJanus() {
 		address: {
 			url: config.janus.address,
 		},
-		retry_time_secs: 3
+		retry_time_secs: 3,
+		max_retries: Number.MAX_VALUE
 	});
 	connection.once(Janode.EVENT.CONNECTION_ERROR, () => {
 		whip.warn('Lost connectivity to Janus, reset the manager and try reconnecting');
