@@ -1,7 +1,7 @@
 {
 	"name": "janus-whip-server",
 	"description": "Simple Janus-based WHIP server",
-	"version": "0.0.1",
+	"version": "0.0.2",
 	"license": "GPLv3",
 	"keywords": [
 		"whip",
@@ -21,7 +21,7 @@
 		"cors": "^2.8.5",
 		"debug": "^4.4.0",
 		"express": "^5.1.0",
-		"janode": "^1.7.1"
+		"janode": "^1.7.4"
 	},
 	"scripts": {
 		"build": "npm install --production",

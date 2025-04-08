@@ -22,7 +22,7 @@ import Janode from 'janode';
 import VideoRoomPlugin from 'janode/plugins/videoroom';
 
 // Debugging
-var whip = {
+const whip = {
 	debug: debug('whip:debug'),
 	err: debug('whip:error'),
 	warn: debug('whip:warn'),
@@ -33,9 +33,9 @@ var whip = {
 import config from './config.js';
 
 // Static properties
-var janus = null;
-var endpoints = {}, resources = {};
-var max32 = Math.pow(2, 32) - 1;
+let janus = null;
+const endpoints = {}, resources = {};
+const max32 = Math.pow(2, 32) - 1;
 
 // Startup
 (async function main() {
@@ -89,10 +89,7 @@ async function connectToJanus() {
 	connection.once(Janode.EVENT.CONNECTION_ERROR, () => {
 		whip.warn('Lost connectivity to Janus, reset the manager and try reconnecting');
 		// Teardown existing endpoints
-		for(let id in endpoints) {
-			let endpoint = endpoints[id];
-			if(!endpoint)
-				continue;
+		for(const [id, endpoint] of Object.entries(endpoints)) {
 			endpoint.enabling = false;
 			endpoint.enabled = false;
 			delete endpoint.handle;
@@ -130,8 +127,7 @@ function setupRest(app) {
 		res.setHeader('content-type', 'application/json');
 		res.status(200);
 		let list = [];
-		for(let id in endpoints) {
-			let endpoint = endpoints[id];
+		for(const [id, endpoint] of Object.entries(endpoints)) {
 			let le = {
 				id: endpoint.id,
 				room: endpoint.room,
