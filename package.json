@@ -1,7 +1,7 @@
 {
 	"name": "janus-whip-server",
 	"description": "Simple Janus-based WHIP server",
-	"version": "0.0.1",
+	"version": "0.0.2",
 	"license": "GPLv3",
 	"keywords": [
 		"whip",
@@ -15,17 +15,18 @@
 		"email": "lorenzo@meetecho.com"
 	},
 	"main": "src/server.js",
+	"type": "module",
 	"dependencies": {
-		"async": ">= 1.5.2",
-		"colors": ">= 1.1.2",
+		"colors": "^1.4.0",
 		"cors": "^2.8.5",
-		"debug": ">= 2.2.0",
-		"express": ">= 4.12.3",
-		"websocket": ">= 1.0.25"
+		"debug": "^4.4.0",
+		"express": "^5.1.0",
+		"janode": "^1.7.4"
 	},
 	"scripts": {
 		"build": "npm install --production",
-		"start": "DEBUG=whip:*,-whip:debug,janus:*,-janus:debug,-janus:vdebug node src/server.js",
-		"start-debug": "DEBUG=whip:*,janus:* node src/server.js"
+		"start": "DEBUG=whip:*,-whip:debug JDEBUG=warn node src/server.js",
+		"start-verbose": "DEBUG=whip:*,-whip:debug JDEBUG=info node src/server.js",
+		"start-debug": "DEBUG=whip:* JDEBUG=debug node src/server.js"
 	}
 }
