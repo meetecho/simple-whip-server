@@ -20,19 +20,6 @@ import Janode from 'janode';
 import VideoRoomPlugin from 'janode/plugins/videoroom';
 import { EventEmitter } from 'events';
 
-// Utils
-const max32 = Math.pow(2, 32) - 1;
-
-const charSet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
-function generateRandomString(len) {
-	let randomString = '';
-	for(let i=0; i<len; i++) {
-		let randomPoz = Math.floor(Math.random() * charSet.length);
-		randomString += charSet.substring(randomPoz,randomPoz+1);
-	}
-	return randomString;
-}
-
 // WHIP server class
 class JanusWhipServer extends EventEmitter {
 
@@ -50,6 +37,7 @@ class JanusWhipServer extends EventEmitter {
 			throw new Error('Invalid configuration, missing parameter "basePath" in "rest"');
 		if(!rest.port && !rest.app)
 			throw new Error('Invalid configuration, at least one of "port" and "app" should be set in "rest"');
+		const debugLevels = [ 'err', 'warn', 'info', 'verb', 'debug' ];
 		if(debug && debugLevels.indexOf(debug) === -1)
 			throw new Error('Invalid configuration, unsupported "debug" level');
 		this.config = {
@@ -70,7 +58,7 @@ class JanusWhipServer extends EventEmitter {
 		this.janus = null;
 		this.endpoints = new Map();
 		this.resources = new Map();
-		this.logger = new JanusWhipLogger({ prefix: '[WHIP] ', level: debug ? debug : 'info' });
+		this.logger = new JanusWhipLogger({ prefix: '[WHIP] ', level: debug ? debugLevels.indexOf(debug) : 2 });
 	}
 
 	async start() {
@@ -113,6 +101,16 @@ class JanusWhipServer extends EventEmitter {
 			await this.janus.close();
 		if(this.server)
 			this.server.close();
+	}
+
+	generateRandomString(len) {
+		const charSet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+		let randomString = '';
+		for(let i=0; i<len; i++) {
+			let randomPoz = Math.floor(Math.random() * charSet.length);
+			randomString += charSet.substring(randomPoz,randomPoz+1);
+		}
+		return randomString;
 	}
 
 	createEndpoint({ id, room, secret, adminKey, pin, label, token, iceServers, recipient }) {
@@ -326,13 +324,13 @@ class JanusWhipServer extends EventEmitter {
 			endpoint.enabling = true;
 			try {
 				// Create a random ID for the resource path
-				let rid = generateRandomString(16);
+				let rid = this.generateRandomString(16);
 				while(this.resources.has(rid))
-					rid = generateRandomString(16);
+					rid = this.generateRandomString(16);
 				this.resources.set(rid, id);
 				endpoint.resourceId = rid;
 				endpoint.resource = this.config.rest.basePath + '/resource/' + rid;
-				endpoint.latestEtag = generateRandomString(16);
+				endpoint.latestEtag = this.generateRandomString(16);
 				// Take note of SDP and ICE credentials
 				endpoint.sdpOffer = req.body;
 				endpoint.ice = {
@@ -372,6 +370,7 @@ class JanusWhipServer extends EventEmitter {
 				});
 				if(endpoint.recipient && endpoint.recipient.host && (endpoint.recipient.audioPort > 0 || endpoint.recipient.videoPort > 0)) {
 					// Configure an RTP forwarder too
+					const max32 = Math.pow(2, 32) - 1;
 					let details = {
 						room: endpoint.room,
 						feed: endpoint.publisher.feed,
@@ -571,7 +570,7 @@ class JanusWhipServer extends EventEmitter {
 				endpoint.ice.ufrag = iceUfrag;
 				endpoint.ice.pwd = icePwd;
 				// Generate a new ETag too
-				endpoint.latestEtag = generateRandomString(16);
+				endpoint.latestEtag = this.generateRandomString(16);
 				this.logger.verb('New ETag: ' + endpoint.latestEtag);
 				// Send the new offer
 				const result = await endpoint.handle.configure({
@@ -706,7 +705,7 @@ const debugLevels = [ 'err', 'warn', 'info', 'verb', 'debug' ];
 class JanusWhipLogger {
 	constructor({ prefix, level }) {
 		this.prefix = prefix;
-		this.debugLevel = debugLevels.indexOf(level);
+		this.debugLevel = level;
 	}
 
 	err() {
