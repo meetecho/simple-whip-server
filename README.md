@@ -5,6 +5,8 @@ This is Node.js library implementation of a [WHIP server](https://www.rfc-editor
 
 The library is available on npm (TBD.) and the source code is on [Github](https://github.com/meetecho/simple-whip-server/).
 
+> Note: this is an implementation of WHIP (WebRTC-HTTP ingestion protocol), **NOT** WHEP (WebRTC-HTTP egress protocol). If you're looking for a WHEP server to handle media ingestion, check the [Simple WHEP Server](https://github.com/meetecho/simple-whep-server) library instead. The two libraries can be used together in the same application, if you want to serve both protocols at the same time.
+
 # Example of usage
 
 The repo comes with a [few examples](https://github.com/meetecho/simple-whip-server/tree/master/examples) that show how you can create a new WHIP server.
