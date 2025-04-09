@@ -115,7 +115,7 @@ Notice that the array will contain a list of objects only including the `id` and
 Both `JanusWhipServer` and `JanusWhipEndpoint` are event emitters. At the time of writing, the supported events are:
 
 * `janus-disconnected`
-* `janus-resconnected`
+* `janus-reconnected`
 * `endpoint-active`
 * `endpoint-inactive`
 
