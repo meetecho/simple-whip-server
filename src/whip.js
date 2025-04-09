@@ -33,12 +33,6 @@ function generateRandomString(len) {
 	return randomString;
 }
 
-// Entry point
-const create = (config = {}) => {
-	const server = new JanusWhipServer(config);
-	return server.start();
-};
-
 // WHIP server class
 class JanusWhipServer extends EventEmitter {
 
@@ -757,8 +751,7 @@ class JanusWhipLogger {
 }
 
 // Exports
-export default {
-	create,
+export {
 	JanusWhipServer,
 	JanusWhipEndpoint
 };

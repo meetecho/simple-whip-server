@@ -14,7 +14,8 @@ The repo comes with a [few examples](https://github.com/meetecho/simple-whip-ser
 You create a new server this way:
 
 ```js
-const server = await JanusWhipServer.create(config);
+const server = new JanusWhipServer(config);
+await server.start();
 ```
 
 where `config` is an object that may contain the following properties:
@@ -45,7 +46,7 @@ where `config` is an object that may contain the following properties:
 The following snippet creates a WHIP server that will spawn its own REST backend on port `7080`:
 
 ```js
-const server = await JanusWhipServer.create({
+const server = new JanusWhipServer({
 	janus: {
 		address: 'ws://localhost:8188'
 	},
@@ -59,7 +60,7 @@ const server = await JanusWhipServer.create({
 The following snippet reuses an existing Express app contest for the WHIP server:
 
 ```js
-const server = await JanusWhipServer.create({
+const server = new JanusWhipServer({
 	janus: {
 		address: 'ws://localhost:8188'
 	},

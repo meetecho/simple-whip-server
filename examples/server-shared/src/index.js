@@ -1,6 +1,6 @@
 import express from 'express';
 import http from 'http';
-import JanusWhipServer from '../../../src/whip.js';
+import { JanusWhipServer } from '../../../src/whip.js';
 
 (async function main() {
 	console.log('Example: WHIP server using pre-existing REST backend');
@@ -16,7 +16,7 @@ import JanusWhipServer from '../../../src/whip.js';
 	http.createServer({}, myApp).listen(7080);
 
 	// Create a WHIP server, and add it with base path /whip to the server above
-	server = await JanusWhipServer.create({
+	server = new JanusWhipServer({
 		janus: {
 			address: 'ws://localhost:8188'
 		},
@@ -32,6 +32,8 @@ import JanusWhipServer from '../../../src/whip.js';
 	server.on('janus-reconnected', () => {
 		console.log('WHIP server reconnected to Janus');
 	});
+	// Start the server
+	await server.start();
 
 	// Create a test endpoint using a callback function to validate the token
 	let endpoint = server.createEndpoint({ id: 'abc123', room: 1234, token: function(authtoken) {
