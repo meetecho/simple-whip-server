@@ -84,7 +84,7 @@ class JanusWhipServer extends EventEmitter {
 			throw new Error('WHIP server already started');
 		// Connect to Janus
 		await this._connectToJanus();
-		// 2. WHIP REST API
+		// WHIP REST API
 		if(!this.config.rest.app) {
 			// Spawn a new app and server
 			this.logger.verb('Spawning new Express app');
@@ -150,7 +150,7 @@ class JanusWhipServer extends EventEmitter {
 		return list;
 	}
 
-	getEndpoint() {
+	getEndpoint({ id }) {
 		return this.endpoints.get(id);
 	}
 
