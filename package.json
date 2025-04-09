@@ -1,8 +1,8 @@
 {
 	"name": "janus-whip-server",
-	"description": "Simple Janus-based WHIP server",
-	"version": "0.0.2",
-	"license": "GPLv3",
+	"description": "Simple Janus-based WHIP server library",
+	"version": "1.0.0",
+	"type": "module",
 	"keywords": [
 		"whip",
 		"wish",
@@ -14,19 +14,36 @@
 		"name": "Lorenzo Miniero",
 		"email": "lorenzo@meetecho.com"
 	},
+	"repository": {
+		"type": "git",
+		"url": "git+https://github.com/meetecho/simple-whip-server.git"
+	},
+	"bugs": {
+		"url": "https://github.com/meetecho/simple-whip-server/issues"
+	},
+	"license": "ISC",
 	"main": "src/server.js",
-	"type": "module",
+	"exports": {
+		".": "./src/server.js"
+	},
+	"files": [
+		"src/server.js"
+	],
 	"dependencies": {
-		"colors": "^1.4.0",
 		"cors": "^2.8.5",
-		"debug": "^4.4.0",
 		"express": "^5.1.0",
 		"janode": "^1.7.4"
 	},
+	"devDependencies": {
+		"@eslint/js": "^9.4.0",
+		"eslint": "^9.4.0",
+		"globals": "^15.4.0"
+	},
+	"engines": {
+		"node": " >=18.18.0"
+	},
 	"scripts": {
-		"build": "npm install --production",
-		"start": "DEBUG=whip:*,-whip:debug JDEBUG=warn node src/server.js",
-		"start-verbose": "DEBUG=whip:*,-whip:debug JDEBUG=info node src/server.js",
-		"start-debug": "DEBUG=whip:* JDEBUG=debug node src/server.js"
+		"build": "npm install --omit=dev",
+		"lint": "npx eslint --debug"
 	}
 }
