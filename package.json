@@ -22,12 +22,12 @@
 		"url": "https://github.com/meetecho/simple-whip-server/issues"
 	},
 	"license": "ISC",
-	"main": "src/server.js",
+	"main": "src/whip.js",
 	"exports": {
-		".": "./src/server.js"
+		".": "./src/whip.js"
 	},
 	"files": [
-		"src/server.js"
+		"src/whip.js"
 	],
 	"dependencies": {
 		"cors": "^2.8.5",
