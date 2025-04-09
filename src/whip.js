@@ -160,7 +160,7 @@ class JanusWhipServer extends EventEmitter {
 			throw new Error('Invalid endpoint ID');
 		// Get rid of the Janus publisher, if there's one active
 		if(this.janus && endpoint.handle)
-			await endpoint.handle.detach().catch(err => {});
+			await endpoint.handle.detach().catch(_err => {});
 		if(endpoint.resourceId)
 			delete this.resources[endpoint.resourceId];
 		delete endpoint.resourceId;
@@ -214,7 +214,7 @@ class JanusWhipServer extends EventEmitter {
 		const router = express.Router();
 
 		// Just a helper to make sure this API is up and running
-		router.get('/healthcheck', (req, res) => {
+		router.get('/healthcheck', (_req, res) => {
 			this.logger.debug('/healthcheck');
 			res.sendStatus(200);
 		});
@@ -267,7 +267,7 @@ class JanusWhipServer extends EventEmitter {
 						continue;
 					let link = '<' + server.uri + '>; rel="ice-server"';
 					if(server.username && server.credential) {
-						link += ';'
+						link += ';';
 						link += ' username="' + server.username + '";' +
 							' credential="' + server.credential + '";' +
 							' credential-type="password"';
@@ -410,7 +410,7 @@ class JanusWhipServer extends EventEmitter {
 							continue;
 						let link = '<' + server.uri + '>; rel="ice-server"';
 						if(server.username && server.credential) {
-							link += ';'
+							link += ';';
 							link += ' username="' + server.username + '";' +
 								' credential="' + server.credential + '";' +
 								' credential-type="password"';
@@ -440,13 +440,13 @@ class JanusWhipServer extends EventEmitter {
 		});
 
 		// GET, HEAD and PUT on the endpoint must return a 405
-		router.get('/endpoint/:id', (req, res) => {
+		router.get('/endpoint/:id', (_req, res) => {
 			res.sendStatus(405);
 		});
-		router.head('/endpoint/:id', (req, res) => {
+		router.head('/endpoint/:id', (_req, res) => {
 			res.sendStatus(405);
 		});
-		router.put('/endpoint/:id', (req, res) => {
+		router.put('/endpoint/:id', (_req, res) => {
 			res.sendStatus(405);
 		});
 
@@ -587,7 +587,7 @@ class JanusWhipServer extends EventEmitter {
 					}
 				});
 				// Now that we have a response, trickle the candidates we received
-				if(candidates.length > 0 && janus)
+				if(candidates.length > 0 && this.janus)
 					await endpoint.handle.trickle(candidates);
 				// Read the ICE credentials and send them back
 				let sdpAnswer = result.jsep.sdp;
@@ -646,13 +646,14 @@ class JanusWhipServer extends EventEmitter {
 			this.logger.verb('/resource/:', id);
 			// Get rid of the Janus publisher
 			if(this.janus && endpoint.handle)
-				await endpoint.handle.detach().catch(err => {});
+				await endpoint.handle.detach().catch(_err => {});
 			endpoint.enabled = false;
 			endpoint.enabling = false;
 			delete endpoint.handle;
 			delete endpoint.publisher;
 			delete endpoint.sdpOffer;
 			delete endpoint.ice;
+			if(endpoint.resourceId)
 				this.resources.delete(endpoint.resourceId);
 			delete endpoint.resourceId;
 			delete endpoint.resource;
@@ -665,16 +666,16 @@ class JanusWhipServer extends EventEmitter {
 		});
 
 		// GET, HEAD, POST and PUT on the resource must return a 405
-		router.get('/resource/:rid', (req, res) => {
+		router.get('/resource/:rid', (_req, res) => {
 			res.sendStatus(405);
 		});
-		router.head('/resource/:rid', (req, res) => {
+		router.head('/resource/:rid', (_req, res) => {
 			res.sendStatus(405);
 		});
-		router.post('/resource/:rid', (req, res) => {
+		router.post('/resource/:rid', (_req, res) => {
 			res.sendStatus(405);
 		});
-		router.put('/resource/:rid', (req, res) => {
+		router.put('/resource/:rid', (_req, res) => {
 			res.sendStatus(405);
 		});
 

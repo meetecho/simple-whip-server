@@ -8,7 +8,7 @@ import JanusWhipServer from '../../../src/whip.js';
 
 	// Create an HTTP server and bind to port 7180 just to list endpoints
 	let myApp = express();
-	myApp.get('/endpoints', async (req, res) => {
+	myApp.get('/endpoints', async (_req, res) => {
 		res.setHeader('content-type', 'application/json');
 		res.status(200);
 		res.send(JSON.stringify(server.listEndpoints()));

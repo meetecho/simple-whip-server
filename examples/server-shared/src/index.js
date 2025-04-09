@@ -8,7 +8,7 @@ import JanusWhipServer from '../../../src/whip.js';
 
 	// Create an HTTP server and bind to port 7080
 	let myApp = express();
-	myApp.get('/endpoints', async (req, res) => {
+	myApp.get('/endpoints', async (_req, res) => {
 		res.setHeader('content-type', 'application/json');
 		res.status(200);
 		res.send(JSON.stringify(server.listEndpoints()));
@@ -35,7 +35,7 @@ import JanusWhipServer from '../../../src/whip.js';
 
 	// Create a test endpoint using a callback function to validate the token
 	let endpoint = server.createEndpoint({ id: 'abc123', room: 1234, token: function(authtoken) {
-		return authtoken === 'pippozzo'
+		return authtoken === 'verysecret';
 	}});
 	endpoint.on('endpoint-active', function() {
 		console.log(this.id + ': Endpoint is active');
