@@ -12,7 +12,8 @@
 	],
 	"author": {
 		"name": "Lorenzo Miniero",
-		"email": "lorenzo@meetecho.com"
+		"email": "lorenzo@meetecho.com",
+		"url": "https://www.meetecho.com"
 	},
 	"repository": {
 		"type": "git",
