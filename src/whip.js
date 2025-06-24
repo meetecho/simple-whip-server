@@ -16,8 +16,12 @@ import cors from 'cors';
 import fs from 'fs';
 import http from 'http';
 import https from 'https';
+
 import Janode from 'janode';
 import VideoRoomPlugin from 'janode/plugins/videoroom';
+import AudioBridgePlugin from 'janode/plugins/audiobridge';
+import RecordPlayPlugin from 'janode/plugins/recordplay';
+import JanusNdiPlugin from 'janode-ndi';
 import { EventEmitter } from 'events';
 
 // WHIP server class
@@ -113,13 +117,18 @@ class JanusWhipServer extends EventEmitter {
 		return randomString;
 	}
 
-	createEndpoint({ id, room, secret, adminKey, pin, label, token, iceServers, recipient }) {
-		if(!id || !room)
+	createEndpoint({ id, plugin, room, secret, adminKey, pin, label, token, iceServers, recipient }) {
+		if(!id || (plugin !== 'ndi' && plugin !== 'recordplay' && !room))
 			throw new Error('Invalid arguments');
+		if(!plugin)
+			plugin = 'videoroom';
+		if(plugin && plugin !== 'videoroom' && plugin !== 'audiobridge' && plugin !== 'recordplay' && plugin !== 'ndi')
+			throw new Error('Unsupported plugin');
 		if(this.endpoints.has(id))
 			throw new Error('Endpoint already exists');
 		let endpoint = new JanusWhipEndpoint({
 			id: id,
+			plugin: plugin,
 			room: room,
 			secret: secret,
 			adminKey: adminKey,
@@ -337,8 +346,15 @@ class JanusWhipServer extends EventEmitter {
 					ufrag: endpoint.sdpOffer.match(/a=ice-ufrag:(.*)\r\n/)[1],
 					pwd: endpoint.sdpOffer.match(/a=ice-pwd:(.*)\r\n/)[1]
 				};
-				// Connect to the VideoRoom plugin
-				endpoint.handle = await this.janus.attach(VideoRoomPlugin);
+				// Connect to the specified plugin
+				if(endpoint.plugin === 'videoroom')
+					endpoint.handle = await this.janus.attach(VideoRoomPlugin);
+				else if(endpoint.plugin === 'audiobridge')
+					endpoint.handle = await this.janus.attach(AudioBridgePlugin);
+				else if(endpoint.plugin === 'recordplay')
+					endpoint.handle = await this.janus.attach(RecordPlayPlugin);
+				else if(endpoint.plugin === 'ndi')
+					endpoint.handle = await this.janus.attach(JanusNdiPlugin);
 				endpoint.handle.on(Janode.EVENT.HANDLE_DETACHED, () => {
 					// Janus notified us the session is gone, tear it down
 					let endpoint = this.endpoints.get(id);
@@ -357,18 +373,52 @@ class JanusWhipServer extends EventEmitter {
 						delete endpoint.latestEtag;
 					}
 				});
-				endpoint.publisher = await endpoint.handle.joinConfigurePublisher({
-					room: endpoint.room,
-					pin: endpoint.pin,
-					display: endpoint.label,
-					audio: true,
-					video: true,
-					jsep: {
-						type: 'offer',
-						sdp: req.body
-					}
-				});
-				if(endpoint.recipient && endpoint.recipient.host && (endpoint.recipient.audioPort > 0 || endpoint.recipient.videoPort > 0)) {
+				if(endpoint.plugin === 'videoroom') {
+					endpoint.publisher = await endpoint.handle.joinConfigurePublisher({
+						room: endpoint.room,
+						pin: endpoint.pin,
+						display: endpoint.label,
+						audio: true,
+						video: true,
+						jsep: {
+							type: 'offer',
+							sdp: req.body
+						}
+					});
+				} else if(endpoint.plugin === 'audiobridge') {
+					await endpoint.handle.join({
+						room: endpoint.room,
+						pin: endpoint.pin,
+						display: endpoint.label
+					});
+					endpoint.publisher = await endpoint.handle.configure({
+						jsep: {
+							type: 'offer',
+							sdp: req.body
+						}
+					});
+				} else if(endpoint.plugin === 'recordplay') {
+					endpoint.publisher = await endpoint.handle.record({
+						name: endpoint.label,
+						jsep: {
+							type: 'offer',
+							sdp: req.body
+						}
+					});
+				} else if(endpoint.plugin === 'ndi') {
+					endpoint.publisher = await endpoint.handle.translate({
+						name: endpoint.label,
+						jsep: {
+							type: 'offer',
+							sdp: req.body
+						}
+					});
+					console.log(JanusNdiPlugin.EVENT.JANUS_NDI_TALLY);
+					endpoint.handle.on(JanusNdiPlugin.EVENT.JANUS_NDI_TALLY, (data) => {
+						console.log('Tally:', data);
+					});
+				}
+				if(endpoint.plugin === 'videoroom' && endpoint.recipient && endpoint.recipient.host && (endpoint.recipient.audioPort > 0 || endpoint.recipient.videoPort > 0)) {
 					// Configure an RTP forwarder too
 					const max32 = Math.pow(2, 32) - 1;
 					let details = {
@@ -685,9 +735,10 @@ class JanusWhipServer extends EventEmitter {
 
 // WHIP endpoint class
 class JanusWhipEndpoint extends EventEmitter {
-	constructor({ id, room, secret, adminKey, pin, label, token, iceServers, recipient }) {
+	constructor({ id, plugin, room, secret, adminKey, pin, label, token, iceServers, recipient }) {
 		super();
 		this.id = id;
+		this.plugin = plugin;
 		this.room = room;
 		this.secret = secret;
 		this.adminKey = adminKey;
@@ -701,7 +752,6 @@ class JanusWhipEndpoint extends EventEmitter {
 }
 
 // Logger class
-const debugLevels = [ 'err', 'warn', 'info', 'verb', 'debug' ];
 class JanusWhipLogger {
 	constructor({ prefix, level }) {
 		this.prefix = prefix;
