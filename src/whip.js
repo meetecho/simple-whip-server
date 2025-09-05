@@ -582,13 +582,24 @@ class JanusWhipServer extends EventEmitter {
 				// Now that we have a response, trickle the candidates we received
 				if(candidates.length > 0 && this.janus)
 					await endpoint.handle.trickle(candidates);
-				// Read the ICE credentials and send them back
-				let sdpAnswer = result.jsep.sdp;
-				let serverUfrag = sdpAnswer.match(/a=ice-ufrag:(.*)\r\n/)[1];
-				let serverPwd = sdpAnswer.match(/a=ice-pwd:(.*)\r\n/)[1];
-				let payload =
-					'a=ice-ufrag:' + serverUfrag + '\r\n' +
-					'a=ice-pwd:' + serverPwd + '\r\n';
+				// Read the ICE credentials/candidates and send them back
+				let serverUfrag, serverPwd, serverCandidates = [];
+
+				const sdpAnswer = result.jsep.sdp;
+				for(const line of sdpAnswer.split(/\r?\n/)) {
+					if(line.startsWith('a=ice-ufrag:'))
+						serverUfrag = line;
+					else if(line.startsWith('a=ice-pwd:'))
+						serverPwd = line;
+					else if(line.startsWith('a=candidate:'))
+						serverCandidates.push(line);
+				}
+				if (!serverUfrag || !serverPwd || !serverCandidates.length)
+					this.logger.err('Unable to get complete local ICE restart information');
+				serverCandidates.push('a=end-of-candidates\r\n');
+
+				const payload = serverUfrag + '\r\n' + serverPwd + '\r\n' + serverCandidates.join('\r\n');
+
 				res.set('ETag', '"' + endpoint.latestEtag + '"');
 				res.writeHeader(200, { 'Content-Type': 'application/trickle-ice-sdpfrag' });
 				res.write(payload);
