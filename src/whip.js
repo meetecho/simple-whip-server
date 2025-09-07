@@ -585,20 +585,16 @@ class JanusWhipServer extends EventEmitter {
 				// Read the ICE credentials/candidates and send them back
 				let serverUfrag, serverPwd, serverCandidates = [];
 
-				const sdpAnswer = result.jsep.sdp;
-				for(const line of sdpAnswer.split(/\r?\n/)) {
-					if(line.startsWith('a=ice-ufrag:'))
-						serverUfrag = line;
-					else if(line.startsWith('a=ice-pwd:'))
-						serverPwd = line;
-					else if(line.startsWith('a=candidate:'))
-						serverCandidates.push(line);
-				}
-				if (!serverUfrag || !serverPwd || !serverCandidates.length)
-					this.logger.err('Unable to get complete local ICE restart information');
-				serverCandidates.push('a=end-of-candidates\r\n');
-
-				const payload = serverUfrag + '\r\n' + serverPwd + '\r\n' + serverCandidates.join('\r\n');
+				const sdpLines = result.jsep.sdp.split(/\r?\n/);
+				const payloadLines = sdpLines.filter(line => {
+					return line.startsWith('a=ice-')
+						|| line.startsWith('a=group:BUNDLE')
+						|| line.startsWith('m=')
+						|| line.startsWith('a=mid:')
+						|| line.startsWith('a=candidate:')
+						|| line.startsWith('a=end-of-candidates')
+				});
+				const payload = payloadLines.join('\r\n') + '\r\n';
 
 				res.set('ETag', '"' + endpoint.latestEtag + '"');
 				res.writeHeader(200, { 'Content-Type': 'application/trickle-ice-sdpfrag' });
