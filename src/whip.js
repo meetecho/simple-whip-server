@@ -585,7 +585,11 @@ class JanusWhipServer extends EventEmitter {
 				// Read the ICE credentials/candidates and send them back
 				let serverUfrag, serverPwd, serverCandidates = [];
 
-				const sdpLines = result.jsep.sdp.split(/\r?\n/);
+				let sdp = result.jsep.sdp
+				const sections = sdp.split(/\r?\nm=/);
+				if(sections.length > 2)
+					sdp = sections[0] + sections[1];
+				const sdpLines = sdp.split(/\r?\n/);
 				const payloadLines = sdpLines.filter(line => {
 					return line.startsWith('a=ice-')
 						|| line.startsWith('a=group:BUNDLE')
