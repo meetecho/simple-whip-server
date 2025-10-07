@@ -42,12 +42,14 @@ class JanusWhipServer extends EventEmitter {
 			throw new Error('Invalid configuration, unsupported "debug" level');
 		this.config = {
 			janus: {
-				address: janus.address
+				address: janus.address,
+				apisecret: janus.apisecret
 			},
 			rest: {
 				port: rest.port,
 				basePath: rest.basePath,
-				app: rest.app
+				app: rest.app,
+				https: rest.https
 			},
 			allowTrickle: (allowTrickle === true),
 			strictETags: (strictETags === true),
@@ -166,6 +168,7 @@ class JanusWhipServer extends EventEmitter {
 			is_admin: false,
 			address: {
 				url: this.config.janus.address,
+				apisecret: this.config.janus.apisecret
 			},
 			retry_time_secs: 3,
 			max_retries: Number.MAX_VALUE
