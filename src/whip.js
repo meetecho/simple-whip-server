@@ -114,6 +114,7 @@ class JanusWhipServer extends EventEmitter {
 	}
 
 	createEndpoint({ id, room, secret, adminKey, pin, label, token, iceServers, recipient }) {
+		this.logger.debug('createEndpoint was called for id', id);
 		if(!id || !room)
 			throw new Error('Invalid arguments');
 		if(this.endpoints.has(id))
@@ -135,6 +136,7 @@ class JanusWhipServer extends EventEmitter {
 	}
 
 	listEndpoints() {
+		this.logger.debug('listEndpoints was called');
 		let list = [];
 		this.endpoints.forEach(function(endpoint, id) {
 			list.push({ id: id, enabled: endpoint.enabled });
@@ -143,10 +145,12 @@ class JanusWhipServer extends EventEmitter {
 	}
 
 	getEndpoint({ id }) {
+		this.logger.debug('getEndpoint was called for id', id);
 		return this.endpoints.get(id);
 	}
 
 	async destroyEndpoint({ id }) {
+		this.logger.debug('destroyEndpoint was called for id', id);
 		let endpoint = this.endpoints.get(id);
 		if(!id || !endpoint)
 			throw new Error('Invalid endpoint ID');
@@ -207,7 +211,7 @@ class JanusWhipServer extends EventEmitter {
 
 		// Just a helper to make sure this API is up and running
 		router.get('/healthcheck', (_req, res) => {
-			this.logger.debug('/healthcheck');
+			this.logger.debug('GET /healthcheck', _req.ip);
 			res.sendStatus(200);
 		});
 
@@ -218,6 +222,7 @@ class JanusWhipServer extends EventEmitter {
 			res.setHeader('Vary', 'Access-Control-Request-Headers');
 			// Authenticate the request, and only return Link headers if valid
 			let id = req.params.id;
+			this.logger.debug('OPTIONS /endpoint/', id, req.ip);
 			let endpoint = this.endpoints.get(id);
 			if(!id || !endpoint) {
 				res.sendStatus(204);
@@ -273,13 +278,16 @@ class JanusWhipServer extends EventEmitter {
 		// Publish to a WHIP endpoint
 		router.post('/endpoint/:id', async (req, res) => {
 			let id = req.params.id;
+			this.logger.debug('POST /endpoint/' + id, req.ip);
 			let endpoint = this.endpoints.get(id);
 			if(!id || !endpoint) {
+				this.logger.debug('[' + id + '] 404 Invalid endpoint ID');
 				res.status(404);
 				res.send('Invalid endpoint ID');
 				return;
 			}
 			if(endpoint.enabling || endpoint.enabled) {
+				this.logger.debug('[' + id + '] 403 Endpoint ID already in use');
 				res.status(403);
 				res.send('Endpoint ID already in use');
 				return;
@@ -288,6 +296,7 @@ class JanusWhipServer extends EventEmitter {
 			this.logger.debug(req.body);
 			// Make sure we received an SDP
 			if(req.headers['content-type'] !== 'application/sdp' || req.body.indexOf('v=0') < 0) {
+				this.logger.debug('[' + id + '] 406 Unsupported content type');
 				res.status(406);
 				res.send('Unsupported content type');
 				return;
@@ -296,6 +305,7 @@ class JanusWhipServer extends EventEmitter {
 			let auth = req.headers['authorization'];
 			if(endpoint.token) {
 				if(!auth || auth.indexOf('Bearer ') < 0) {
+					this.logger.debug('[' + id + '] 403 Unauthorized');
 					res.status(403);
 					res.send('Unauthorized');
 					return;
@@ -303,11 +313,13 @@ class JanusWhipServer extends EventEmitter {
 				let authtoken = auth.split('Bearer ')[1];
 				if(typeof endpoint.token === 'function') {
 					if(!endpoint.token(authtoken)) {
+						this.logger.debug('[' + id + '] 403 Unauthorized');
 						res.status(403);
 						res.send('Unauthorized');
 						return;
 					}
 				} else if(!authtoken || authtoken.length === 0 || authtoken !== endpoint.token) {
+					this.logger.debug('[' + id + '] 403 Unauthorized');
 					res.status(403);
 					res.send('Unauthorized');
 					return;
@@ -315,6 +327,7 @@ class JanusWhipServer extends EventEmitter {
 			}
 			// Make sure Janus is up and running
 			if(!this.janus) {
+				this.logger.debug('[' + id + '] 503 Janus unavailable');
 				res.status(503);
 				res.send('Janus unavailable');
 				return;
@@ -451,25 +464,30 @@ class JanusWhipServer extends EventEmitter {
 			}
 			let rid = req.params.rid;
 			let id = this.resources.get(rid);
+			this.logger.debug('PATCH /resource/' + rid, req.ip);
 			if(!rid || !id) {
+				this.logger.debug('[' + rid + '] 404 Invalid resource ID');
 				res.status(404);
 				res.send('Invalid resource ID');
 				return;
 			}
 			let endpoint = this.endpoints.get(id);
 			if(!endpoint) {
+				this.logger.debug('[' + id + '] 404 Invalid endpoint ID');
 				res.status(404);
 				res.send('Invalid endpoint ID');
 				return;
 			}
 			if(endpoint.latestEtag)
 				res.set('ETag', '"' + endpoint.latestEtag + '"');
+			this.logger.debug('PATCH /resource[trickle]/' + id, req.ip);
 			this.logger.verb('/resource[trickle]/:', id);
 			this.logger.debug(req.body);
 			// Check the Bearer token
 			let auth = req.headers['authorization'];
 			if(endpoint.token) {
 				if(!auth || auth.indexOf('Bearer ') < 0) {
+					this.logger.debug('[' + id + '] 403 Unauthorized');
 					res.status(403);
 					res.send('Unauthorized');
 					return;
@@ -477,17 +495,20 @@ class JanusWhipServer extends EventEmitter {
 				let authtoken = auth.split('Bearer ')[1];
 				if(typeof endpoint.token === 'function') {
 					if(!endpoint.token(authtoken)) {
+						this.logger.debug('[' + id + '] 403 Unauthorized');
 						res.status(403);
 						res.send('Unauthorized');
 						return;
 					}
 				} else if(!authtoken || authtoken.length === 0 || authtoken !== endpoint.token) {
+					this.logger.debug('[' + id + '] 403 Unauthorized');
 					res.status(403);
 					res.send('Unauthorized');
 					return;
 				}
 			}
 			if(!endpoint.handle) {
+				this.logger.debug('[' + id + '] 403 Endpoint ID not published');
 				res.status(403);
 				res.send('Endpoint ID not published');
 				return;
@@ -496,6 +517,7 @@ class JanusWhipServer extends EventEmitter {
 			if(req.headers['if-match'] !== '"*"' && req.headers['if-match'] !== ('"' + endpoint.latestEtag + '"')) {
 				if(this.config.strictETags) {
 					// Only return a failure if we're configured with strict ETag checking, ignore it otherwise
+					this.logger.debug('[' + id + '] 412 Precondition Failed');
 					res.status(412);
 					res.send('Precondition Failed');
 					return;
@@ -504,11 +526,13 @@ class JanusWhipServer extends EventEmitter {
 			// Make sure Janus is up and running
 			if(!this.janus) {
 				res.status(503);
+				this.logger.debug('[' + id + '] 503 Janus unavailable');
 				res.send('Janus unavailable');
 				return;
 			}
 			// Make sure we received a trickle candidate
 			if(req.headers['content-type'] !== 'application/trickle-ice-sdpfrag') {
+				this.logger.debug('[' + id + '] 406 Unsupported content type');
 				res.status(406);
 				res.send('Unsupported content type');
 				return;
@@ -543,6 +567,7 @@ class JanusWhipServer extends EventEmitter {
 			if((req.headers['if-match'] === '*' && !restart) || (req.headers['if-match'] !== '"*"' && restart)) {
 				if(this.config.strictETags) {
 					// Only return a failure if we're configured with strict ETag checking, ignore it otherwise
+					this.logger.debug('[' + id + '] 412 Precondition Failed');
 					res.status(412);
 					res.send('Precondition Failed');
 					return;
@@ -554,6 +579,7 @@ class JanusWhipServer extends EventEmitter {
 					if(candidates.length > 0)
 						await endpoint.handle.trickle(candidates);
 					// We're done
+					this.logger.debug('[' + id + '] 204 no ICE restart');
 					res.sendStatus(204);
 					return;
 				}
@@ -615,13 +641,16 @@ class JanusWhipServer extends EventEmitter {
 		router.delete('/resource/:rid', async (req, res) => {
 			let rid = req.params.rid;
 			let id = this.resources.get(rid);
+			this.logger.debug('DELETE /resource/' + rid, req.ip);
 			if(!rid || !id) {
+				this.logger.debug('[' + rid + '] 404 Invalid resource ID');
 				res.status(404);
 				res.send('Invalid resource ID');
 				return;
 			}
 			let endpoint = this.endpoints.get(id);
 			if(!endpoint) {
+				this.logger.debug('[' + id + '] 404 Invalid endpoint ID');
 				res.status(404);
 				res.send('Invalid endpoint ID');
 				return;
@@ -630,6 +659,7 @@ class JanusWhipServer extends EventEmitter {
 			let auth = req.headers['authorization'];
 			if(endpoint.token) {
 				if(!auth || auth.indexOf('Bearer ') < 0) {
+					this.logger.debug('[' + id + '] 403 Unauthorized');
 					res.status(403);
 					res.send('Unauthorized');
 					return;
@@ -637,11 +667,13 @@ class JanusWhipServer extends EventEmitter {
 				let authtoken = auth.split('Bearer ')[1];
 				if(typeof endpoint.token === 'function') {
 					if(!endpoint.token(authtoken)) {
+						this.logger.debug('[' + id + '] 403 Unauthorized');
 						res.status(403);
 						res.send('Unauthorized');
 						return;
 					}
 				} else if(!authtoken || authtoken.length === 0 || authtoken !== endpoint.token) {
+					this.logger.debug('[' + id + '] 403 Unauthorized');
 					res.status(403);
 					res.send('Unauthorized');
 					return;
