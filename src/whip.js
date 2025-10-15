@@ -588,7 +588,7 @@ class JanusWhipServer extends EventEmitter {
 				let sdp = result.jsep.sdp
 				const sections = sdp.split(/\r?\nm=/);
 				if(sections.length > 2)
-					sdp = sections[0] + sections[1];
+					sdp = sections.slice(0, 2).join('\r\nm=');
 				const sdpLines = sdp.split(/\r?\n/);
 				const payloadLines = sdpLines.filter(line => {
 					return line.startsWith('a=ice-')
