@@ -33,7 +33,8 @@
 	"dependencies": {
 		"cors": "^2.8.5",
 		"express": "^5.1.0",
-		"janode": "^1.7.4"
+		"janode": "^1.8.0",
+		"janode-ndi": "^1.0.0"
 	},
 	"devDependencies": {
 		"@eslint/js": "^9.4.0",

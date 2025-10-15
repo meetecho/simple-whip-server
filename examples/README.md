@@ -7,4 +7,10 @@ This folder contains a few example applications using the Janus WHIP library.
 
 * The `server-shared` folder, instead, contains an example where the application pre-creates a REST server for its own needs, and then tells the library to re-use that server for the WHIP functionality too. A sample endpoint is created, with a callback function used to validate the token any time one is presented.
 
-Both demos subscribe to a few of the events the library can emit for debugging purposes.
+* The `audiobridge` folder shows how you can configure a WHIP endpoint to publish to the AudioBridge plugin, instead of the VideoRoom (which is the default).
+
+* The `recordplay` folder shows how you can configure a WHIP endpoint to publish to the RecordPlay plugin, instead of the VideoRoom (which is the default), thus simply recording the published media to a Janus recording.
+
+* The `ndi` folder shows how you can configure a WHIP endpoint to publish to the [NDI plugin](https://github.com/meetecho/janus-ndi), instead of the VideoRoom (which is the default), in order to have the WebRTC stream turned into an NDI sender. Notice that this will fail if the NDI plugin is not available in the Janus instance.
+
+All demos subscribe to a few of the events the library can emit for debugging purposes.
