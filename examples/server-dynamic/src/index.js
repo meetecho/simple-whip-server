@@ -38,6 +38,8 @@ import { JanusWhipServer } from '../../../src/whip.js';
 	// Create a test endpoint using a callback function to provide the settings
 	let count = 1;
 	let endpoint = server.createEndpoint({ id: 'abc123', customize: function(settings) {
+		// This is called every time a publisher connects, which means
+		// we can return different values for each of them dynamically
 		settings.room = 1234;
 		settings.label = 'WHIP Publisher #' + count;
 		count++;
