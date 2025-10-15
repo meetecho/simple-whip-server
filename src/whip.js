@@ -582,13 +582,24 @@ class JanusWhipServer extends EventEmitter {
 				// Now that we have a response, trickle the candidates we received
 				if(candidates.length > 0 && this.janus)
 					await endpoint.handle.trickle(candidates);
-				// Read the ICE credentials and send them back
-				let sdpAnswer = result.jsep.sdp;
-				let serverUfrag = sdpAnswer.match(/a=ice-ufrag:(.*)\r\n/)[1];
-				let serverPwd = sdpAnswer.match(/a=ice-pwd:(.*)\r\n/)[1];
-				let payload =
-					'a=ice-ufrag:' + serverUfrag + '\r\n' +
-					'a=ice-pwd:' + serverPwd + '\r\n';
+				// Read the ICE credentials/candidates and send them back
+				let serverUfrag, serverPwd, serverCandidates = [];
+
+				let sdp = result.jsep.sdp
+				const sections = sdp.split(/\r?\nm=/);
+				if(sections.length > 2)
+					sdp = sections.slice(0, 2).join('\r\nm=');
+				const sdpLines = sdp.split(/\r?\n/);
+				const payloadLines = sdpLines.filter(line => {
+					return line.startsWith('a=ice-')
+						|| line.startsWith('a=group:BUNDLE')
+						|| line.startsWith('m=')
+						|| line.startsWith('a=mid:')
+						|| line.startsWith('a=candidate:')
+						|| line.startsWith('a=end-of-candidates')
+				});
+				const payload = payloadLines.join('\r\n') + '\r\n';
+
 				res.set('ETag', '"' + endpoint.latestEtag + '"');
 				res.writeHeader(200, { 'Content-Type': 'application/trickle-ice-sdpfrag' });
 				res.write(payload);
