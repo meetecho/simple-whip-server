@@ -117,8 +117,8 @@ class JanusWhipServer extends EventEmitter {
 		return randomString;
 	}
 
-	createEndpoint({ id, plugin, room, secret, adminKey, pin, label, token, iceServers, recipient }) {
-		if(!id || (plugin !== 'ndi' && plugin !== 'recordplay' && !room))
+	createEndpoint({ id, plugin, room, secret, adminKey, pin, label, token, iceServers, recipient, recipients, customize }) {
+		if(!id || (plugin !== 'ndi' && plugin !== 'recordplay' && !room && !customize))
 			throw new Error('Invalid arguments');
 		if(!plugin)
 			plugin = 'videoroom';
@@ -126,6 +126,20 @@ class JanusWhipServer extends EventEmitter {
 			throw new Error('Unsupported plugin');
 		if(this.endpoints.has(id))
 			throw new Error('Endpoint already exists');
+		if(customize && typeof customize !== 'function')
+			throw new Error('Invalid customize function');
+		if(recipient && recipients)
+			throw new Error('Can\'t provide both recipient and recipients');
+		if(recipient)
+			recipients = [ recipient ];
+		if(recipients) {
+			if(!Array.isArray(recipients))
+				throw new Error('Invalid recipients (not an array)');
+			for(let r of recipients) {
+				if(Object.prototype.toString.call(r) !== '[object Object]')
+					throw new Error('Invalid recipient (not an object)');
+			}
+		}
 		let endpoint = new JanusWhipEndpoint({
 			id: id,
 			plugin: plugin,
@@ -136,7 +150,8 @@ class JanusWhipServer extends EventEmitter {
 			label: label ? label : 'WHIP Publisher ' + room,
 			token: token,
 			iceServers: iceServers,
-			recipient: recipient
+			recipients: recipients,
+			customize: customize
 		});
 		this.logger.info('[' + id + '] Created new WHIP endpoint');
 		this.endpoints.set(id, endpoint);
@@ -373,11 +388,27 @@ class JanusWhipServer extends EventEmitter {
 						delete endpoint.latestEtag;
 					}
 				});
+				// Before attaching, let's check if there's a customize callback
+				// function so that the application can configure things dynamically
+				let settings = endpoint;
+				if(endpoint.customize) {
+					settings = {
+						room: endpoint.room,
+						secret: endpoint.secret,
+						adminKey: endpoint.adminKey,
+						pin: endpoint.pin,
+						label: endpoint.label,
+						iceServers: endpoint.iceServers ? JSON.parse(JSON.stringify(endpoint.iceServers)) : undefined,
+						recipients: endpoint.recipients ? JSON.parse(JSON.stringify(endpoint.recipients)) : undefined
+					};
+					endpoint.customize(settings);
+				}
+				// Check which plugin we should contact
 				if(endpoint.plugin === 'videoroom') {
 					endpoint.publisher = await endpoint.handle.joinConfigurePublisher({
-						room: endpoint.room,
-						pin: endpoint.pin,
-						display: endpoint.label,
+						room: settings.room,
+						pin: settings.pin,
+						display: settings.label,
 						audio: true,
 						video: true,
 						jsep: {
@@ -387,9 +418,9 @@ class JanusWhipServer extends EventEmitter {
 					});
 				} else if(endpoint.plugin === 'audiobridge') {
 					await endpoint.handle.join({
-						room: endpoint.room,
-						pin: endpoint.pin,
-						display: endpoint.label
+						room: settings.room,
+						pin: settings.pin,
+						display: settings.label
 					});
 					endpoint.publisher = await endpoint.handle.configure({
 						jsep: {
@@ -399,7 +430,7 @@ class JanusWhipServer extends EventEmitter {
 					});
 				} else if(endpoint.plugin === 'recordplay') {
 					endpoint.publisher = await endpoint.handle.record({
-						name: endpoint.label,
+						name: settings.label,
 						jsep: {
 							type: 'offer',
 							sdp: req.body
@@ -407,7 +438,7 @@ class JanusWhipServer extends EventEmitter {
 					});
 				} else if(endpoint.plugin === 'ndi') {
 					endpoint.publisher = await endpoint.handle.translate({
-						name: endpoint.label,
+						name: settings.label,
 						jsep: {
 							type: 'offer',
 							sdp: req.body
@@ -418,22 +449,28 @@ class JanusWhipServer extends EventEmitter {
 						this.logger.info('[' + id + '] Tally:', data);
 					});
 				}
-				if(endpoint.plugin === 'videoroom' && endpoint.recipient && endpoint.recipient.host && (endpoint.recipient.audioPort > 0 || endpoint.recipient.videoPort > 0)) {
-					// Configure an RTP forwarder too
-					const max32 = Math.pow(2, 32) - 1;
-					let details = {
-						room: endpoint.room,
-						feed: endpoint.publisher.feed,
-						secret: endpoint.secret,
-						admin_key: endpoint.adminKey,
-						host: endpoint.recipient.host,
-						audio_port: endpoint.recipient.audioPort,
-						audio_ssrc: Math.floor(Math.random() * max32),
-						video_port: endpoint.recipient.videoPort,
-						video_ssrc: Math.floor(Math.random() * max32),
-						video_rtcp_port: endpoint.recipient.videoRtcpPort
-					};
-					await endpoint.handle.startForward(details);
+				if(endpoint.plugin === 'videoroom' && settings.recipients && settings.recipients.length > 0) {
+					for(let recipient of settings.recipients) {
+						if(recipient && recipient.host && (recipient.audioPort > 0 || recipient.videoPort > 0)) {
+							// Configure an RTP forwarder for this recipient
+							const max32 = Math.pow(2, 32) - 1;
+							let details = {
+								room: settings.room,
+								feed: endpoint.publisher.feed,
+								secret: settings.secret,
+								admin_key: settings.adminKey,
+								host: recipient.host,
+								audio_port: recipient.audioPort,
+								audio_ssrc: recipient.audioSsrc ?
+									recipient.audioSsrc : Math.floor(Math.random() * max32),
+								video_port: recipient.videoPort,
+								video_ssrc: recipient.videoSsrc ?
+									recipient.videoSsrc : Math.floor(Math.random() * max32),
+								video_rtcp_port: recipient.videoRtcpPort
+							};
+							await endpoint.handle.startForward(details);
+						}
+					}
 				}
 				endpoint.enabling = false;
 				endpoint.enabled = true;
@@ -442,7 +479,7 @@ class JanusWhipServer extends EventEmitter {
 				res.setHeader('Accept-Patch', 'application/trickle-ice-sdpfrag');
 				res.setHeader('Location', endpoint.resource);
 				res.set('ETag', '"' + endpoint.latestEtag + '"');
-				let iceServers = endpoint.iceServers ? endpoint.iceServers : this.config.iceServers;
+				let iceServers = settings.iceServers ? settings.iceServers : this.config.iceServers;
 				if(iceServers && iceServers.length > 0) {
 					// Add a Link header for each static ICE server
 					let links = [];
@@ -746,7 +783,7 @@ class JanusWhipServer extends EventEmitter {
 
 // WHIP endpoint class
 class JanusWhipEndpoint extends EventEmitter {
-	constructor({ id, plugin, room, secret, adminKey, pin, label, token, iceServers, recipient }) {
+	constructor({ id, plugin, room, secret, adminKey, pin, label, token, iceServers, recipient, recipients, customize }) {
 		super();
 		this.id = id;
 		this.plugin = plugin;
@@ -757,7 +794,8 @@ class JanusWhipEndpoint extends EventEmitter {
 		this.label = label;
 		this.token = token;
 		this.iceServers = iceServers;
-		this.recipient = recipient;
+		this.recipients = recipients;
+		this.customize = customize;
 		this.enabled = false;
 	}
 }

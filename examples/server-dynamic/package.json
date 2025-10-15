@@ -1,0 +1,28 @@
+{
+	"name": "janus-whip-server-dynamic",
+	"description": "WHIP server where endpoints settings are dynamic",
+	"type": "module",
+	"keywords": [
+		"whip",
+		"wish",
+		"janus",
+		"webrtc",
+		"meetecho"
+	],
+	"author": {
+		"name": "Lorenzo Miniero",
+		"email": "lorenzo@meetecho.com"
+	},
+	"repository": {
+		"type": "git",
+		"url": "https://github.com/meetecho/simple-whip-server.git"
+	},
+	"license": "ISC",
+	"private": true,
+	"main": "src/index.js",
+	"dependencies": {},
+	"scripts": {
+		"build": "npm install --omit=dev",
+		"start": "node src/index.js"
+	}
+}
