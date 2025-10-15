@@ -90,11 +90,14 @@ The object to pass when creating a new endpoint must refer to the following stru
 	label: "<Display name to use in the VideoRoom|AudioBridge room, Record&Play recording or as an NDI sender (optional)">,
 	token: "<token to require via Bearer authorization when using WHIP: can be either a string, or a callback function to validate the provided token (optional)>",
 	iceServers: [ array of STUN/TURN servers to return via Link headers (optional, overrides global ones) ],
-	recipient: { ... plain RTP recipient (optional, only supported for VideoRoom) ... },
+	recipients: [ { ... plain RTP recipient (optional, only supported for VideoRoom) ... } ],
 	secret: "<VideoRoom secret, if required for external RTP forwarding (optional)>",
-	adminKey: "<VideoRoom plugin Admin Key, if required for external RTP forwarding (optional)>"
+	adminKey: "<VideoRoom plugin Admin Key, if required for external RTP forwarding (optional)>",
+	customize: <callback function to provide most of the above properties dynamically, for each publisher>
 }
 ```
+
+See the [examples](https://github.com/meetecho/simple-whip-server/tree/master/examples) for more info.
 
 Publishing to a WHIP endpoint via WebRTC can be done by sending an SDP offer to the created `<basePath>/endpoint/<id>` endpoint via HTTP POST, which will interact with Janus on your behalf and, if successful, return an SDP answer back in the 200 OK. If you're using [Simple WHIP Client](https://github.com/meetecho/simple-whip-client) to test, the full HTTP path to the endpoint is all you need to provide as the WHIP url.
 
