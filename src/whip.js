@@ -413,9 +413,9 @@ class JanusWhipServer extends EventEmitter {
 							sdp: req.body
 						}
 					});
-					console.log(JanusNdiPlugin.EVENT.JANUS_NDI_TALLY);
+					this.logger.info('[' + id + ']', JanusNdiPlugin.EVENT.JANUS_NDI_TALLY);
 					endpoint.handle.on(JanusNdiPlugin.EVENT.JANUS_NDI_TALLY, (data) => {
-						console.log('Tally:', data);
+						this.logger.info('[' + id + '] Tally:', data);
 					});
 				}
 				if(endpoint.plugin === 'videoroom' && endpoint.recipient && endpoint.recipient.host && (endpoint.recipient.audioPort > 0 || endpoint.recipient.videoPort > 0)) {
