@@ -4,7 +4,7 @@
  * Simple WHIP server
  *
  * Author:  Lorenzo Miniero <lorenzo@meetecho.com>
- * License: GPLv3
+ * License: ISC
  *
  * WHIP API and endpoint management
  *
